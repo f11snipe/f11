@@ -4,7 +4,7 @@
 ### Oneliner
 
 ```bash
-curl -sL https://github.com/f11snipe/f11/raw/master/f11-bind.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11
+curl -sL https://f11snipe.cloud/f11.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11
 ```
 
 
