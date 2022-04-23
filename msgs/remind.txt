@@ -1,0 +1,5 @@
+
+Reminders
+---------
+    * Connect: socat stdio tcp:localhost:7070
+    * Stable: python -c 'import pty; pty.spawn("/bin/bash")'
