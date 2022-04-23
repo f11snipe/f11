@@ -4,9 +4,11 @@
   "description": "Example TCP + PM2/nginx with nodejs",
   "main": "index.js",
   "scripts": {
+    "ci": "npm run build && npm run compile && npm run compress",
     "start": "ts-node index.ts",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
-    "compile": "npm run build && nexe -t 8.6.0 -i dist/index.js -o dist/f11 && xz -z -9 dist/f11"
+    "compile": "nexe -t 8.6.0 -i dist/index.js -o dist/f11 && du -sh dist/",
+    "compress": "echo 'Compressing: dist/f11 -> dist/f11.xz' && xz -z -9 dist/f11 && du -sh dist/"
   },
   "repository": {
     "type": "git",

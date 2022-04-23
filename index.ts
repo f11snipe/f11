@@ -33,6 +33,7 @@ server.on('connection', (socket: net.Socket) => {
     shell.stderr.pipe(socket);
     shell.stdout.on('data', prompt);
     shell.stderr.on('data', prompt);
+    // What about no out?? on enter?
     shell.on('close', (code) => {
       console.log(`[${id}] Child process exited with code ${code}`);
     });
