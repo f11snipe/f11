@@ -1,6 +1,16 @@
 # f11
 *revshellpal*
 
+### TODO
+
+- linpeas (all peas)
+  - other similar enum?
+- pwnkit
+- mimikatz (windows)
+- SUID/SUDO/CAP/
+- 
+
+
 ### Oneliner
 
 ```bash
