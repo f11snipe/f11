@@ -4,8 +4,9 @@
   "description": "Example TCP + PM2/nginx with nodejs",
   "main": "index.js",
   "scripts": {
-    "ci": "npm run build && npm run compile && npm run compress",
+    "ci": "npm run clean && npm run build && npm run compile && npm run compress",
     "start": "nodemon index.ts",
+    "clean": "rm dist/*",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
     "compile": "nexe -t 8.6.0 -i dist/index.js -o dist/f11 && du -sh dist/",
     "compress": "echo 'Compressing: dist/f11 -> dist/f11.xz' && xz -z -9 dist/f11 && du -sh dist/"
