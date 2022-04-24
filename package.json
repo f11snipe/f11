@@ -9,12 +9,33 @@
     "msgs/glhf.txt",
     "msgs/welcome.txt"
   ],
+  "nexe": {
+    "input": "dist/index.js",
+    "output": "dist/test.nex",
+    "resourceFiles": [
+      "msgs/welcome.txt",
+      "msgs/derp-60.txt"
+    ],
+    "browserify": {
+      "excludes": [],
+      "requires": []
+    },
+    "temp": "../src",
+    "debug": true,
+    "runtime": {
+      "nodeConfigureOpts": [
+        "--fully-static"
+      ],
+      "framework": "node",
+      "version": "16"
+    }
+  },
   "scripts": {
     "ci": "npm run clean && npm run build && npm run compile && npm run compress",
     "start": "nodemon index.ts",
     "clean": "rm dist/*",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
-    "compile": "nexe -t 8.6.0 -i dist/index.js -o dist/f11 && du -sh dist/",
+    "compile": "nexe -b -t 16 -i dist/index.js -o dist/f11 && du -sh dist/",
     "compress": "echo 'Compressing: dist/f11 -> dist/f11.xz' && xz -z -9 dist/f11 && du -sh dist/"
   },
   "repository": {
@@ -37,6 +58,7 @@
     "typescript": "^4.6.3"
   },
   "dependencies": {
-    "colors": "^1.4.0"
+    "colors": "^1.4.0",
+    "nexe": "^4.0.0-beta.19"
   }
 }

