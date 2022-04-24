@@ -4,8 +4,8 @@ import { spawn, execSync, spawnSync } from 'child_process';
 import os from 'os';
 import fs from 'fs';
 import net from 'net';
-import tty from 'tty';
-// import {} from 'stream';
+import tty, { ReadStream, WriteStream } from 'tty';
+import stream, { Duplex, Readable, Writable } from 'stream';
 
 const UNIX_SHELLS = ['zsh', 'bash', 'sh'];
 const UNIX_DEFAULT = 'bin/sh';
@@ -21,8 +21,8 @@ const HOST = '0.0.0.0';
 const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/bash")' || python -c 'import pty; pty.spawn("/bin/bash")' || script -qc /bin/bash /dev/null`;
 // Create net tcp server
 const server = net.createServer();
-// Define empty array of tty.WriteStream[] to track open connections
-const sockets: tty.WriteStream[] = [];
+// Define empty array of net.Socket[] to track open connections
+const sockets: net.Socket[] = [];
 const timestamp = (): string => new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
 
 type msgType = 'ok' | 'good' | 'warn' | 'info' | 'debug' | 'error' | 'fatal';
@@ -31,14 +31,17 @@ colors.setTheme({
   ok: ['green'],
   good: ['green'],
   warn: ['yellow'],
-  info: ['black', 'bgGreen'],
+  info: ['black', 'bgCyan'],
   debug: ['dim', 'cyan', 'italic'],
   error: ['red', 'underline'],
   fatal: ['white', 'bgRed', 'bold']
 });
 
 const log = (...args) => console.log( colors.gray(timestamp()), ...args);
-const msg = (theme: msgType, body: string) => log(colors[theme](body));
+const msg = (theme: msgType, body: string, plain?: string) => {
+  log(colors[theme](body));
+  if (plain) log(plain);
+};
 const isMac = (): boolean => /darwin/i.test(os.platform());
 const isLinux = (): boolean => /linux/i.test(os.platform());
 const isWindows = (): boolean => /win/i.test(os.platform());
@@ -51,7 +54,7 @@ const findNixShell = (): string => {
 
     if (check.status === 0) {
       const found = check.stdout.toString().trim();
-      msg('debug', `Found shell! Using: '${shell}' -> ${found}`);
+      msg('debug', `Using shell: '${shell}' -> ${found}`);
       return found;
     } else {
       msg('warn', `Unable to find shell: '${shell}'`);
@@ -70,46 +73,66 @@ const findShell = (): string => isNotWindows() ? findNixShell() : findWinShell()
 
 // Intialize and listen for connections
 server.listen(PORT, HOST, () => {
-  msg('good', `F11snipe server listening: ${HOST}:${PORT} (using shell: ${findShell()})`);
+  msg('good', `F11snipe Server Started!`);
+  msg('good', `Listening: ${HOST}:${PORT}`);
+  msg('good', `SHELL: ${findShell()}`)
 });
 
-const doShell = (socket: tty.WriteStream) => {
+const doShell = (socket: net.Socket) => {
   const sig = `${socket.remoteAddress}:${socket.remotePort}`;
+  const sock = socket as tty.WriteStream;
+  sock.isTTY = true;
+  sock.getWindowSize = function () { return [ 80, 40 ] };
+  sock.cursorTo = tty.WriteStream.prototype.cursorTo;
+  sock.clearLine = tty.WriteStream.prototype.clearLine;
+  sock.clearScreenDown = tty.WriteStream.prototype.clearScreenDown;
+  sock.getColorDepth = tty.WriteStream.prototype.getColorDepth;
+  sock.moveCursor = tty.WriteStream.prototype.moveCursor;
+
   const shell = spawn(findShell());
 
   if (fs.existsSync('msgs/welcome.txt')) socket.write(fs.readFileSync('msgs/welcome.txt'));
 
   shell.stdin.write(`${STABALIZE}\r\n`);
 
-  socket.pipe(shell.stdin);
-  shell.stdout.pipe(socket);
-  shell.stderr.pipe(socket);
+  sock.pipe(shell.stdin);
+  shell.stdout.pipe(sock);
+  shell.stderr.pipe(sock);
+
+  // socket.on('data', (data) => {
+  //   msg('info', `Socket data: ${data}`);
+  //   // shell.stdin.write(data);
+  // });
 
   // shell.stdout.on('data', (data) => {
   //   msg('debug', `[${sig}] shell.stdout: ${data.toString()}`);
-  //   socket.write(data);
+  //   // socket.write(data);
   // });
 
   // shell.stderr.on('data', (data) => {
   //   msg('error', `shell.stderr: ${data.toString()}`);
-  //   socket.write(data);
+  //   // socket.write(data);
   // });
 
   // What about no out?? on enter?
   shell.on('close', (code) => {
-    log(`Child process exited with code ${code}`);
+    msg('debug', `Child process exited with code ${code}`);
   });
 }
 
 // Main handler for new connections
-server.on('connection', (socket: tty.WriteStream) => {
+server.on('connection', (socket: net.Socket) => {
   const sig = `${socket.remoteAddress}:${socket.remotePort}`;
   sockets.push(socket);
 
   msg('info', `[${sig}] New Connection`);
 
   try {
-    doShell(socket);
+    socket.on('data', (data) => {
+      msg('info', `Handle socket data: ${data}`);
+    });
+
+    // doShell(socket);
 
     socket.on('close', (hadError: boolean) => {
       if (hadError) log(`Socket.on(close) with error!`);
@@ -118,9 +141,9 @@ server.on('connection', (socket: tty.WriteStream) => {
         sockets.splice(idx, 1);
       }
 
-      log(`Closed`);
+      msg('info', `[${sig}] Closed Connection`);
     });
-  } catch (err) {
-    log('Caught connection error', err);
+  } catch (err: any) {
+    msg('fatal', `Caught connection error: ${err.message}`);
   }
 });
