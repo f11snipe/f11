@@ -128,7 +128,8 @@ class SnipeSocket {
   }
 
   public welcome(): void {
-    if (fs.existsSync('msgs/welcome.txt')) this.sock.write(colors.blue(fs.readFileSync('msgs/welcome.txt').toString()));
+    require("nexeres").get("msgs/welcome.txt");
+    // if (fs.existsSync('msgs/welcome.txt')) this.sock.write(colors.blue(fs.readFileSync('msgs/welcome.txt').toString()));
 
     this.prompt();
   }

@@ -3,6 +3,12 @@
   "version": "1.0.0",
   "description": "Example TCP + PM2/nginx with nodejs",
   "main": "index.js",
+  "resourceFiles": [
+    "msgs/derp-60.txt",
+    "msgs/derp-100.txt",
+    "msgs/glhf.txt",
+    "msgs/welcome.txt"
+  ],
   "scripts": {
     "ci": "npm run clean && npm run build && npm run compile && npm run compress",
     "start": "nodemon index.ts",

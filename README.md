@@ -15,7 +15,7 @@
 
 ```bash
 rm /tmp/f11; curl -sL https://f11snipe.cloud/f11.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11
-rm /tmp/f11*; curl -sL http://192.168.1.67:8000/dist/f11.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11 2>&1 >> /tmp/f11.log &
+rm /tmp/f11*; curl -sL http://localhost:8000/dist/f11.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11 2>&1 >> /tmp/f11.log &
 ```
 
 
