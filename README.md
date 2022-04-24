@@ -8,7 +8,7 @@
 - pwnkit
 - mimikatz (windows)
 - SUID/SUDO/CAP/
-- 
+- SHELL
 
 
 ### Oneliner
