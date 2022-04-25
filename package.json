@@ -4,11 +4,21 @@
   "description": "F11 - The SnipeSocket",
   "main": "dist/index.js",
   "bin": {
-    "f11": "bin/f11"
+    "f11": "bin/f11",
+    "f11.js": "bin/f11.js"
+  },
+  "pkg": {
+    "scripts": "dist/index.min.js",
+    "assets": [
+      "msgs/**/*",
+      "assets/**/*"
+    ],
+    "compress": "GZip",
+    "ouput": "dist/f11"
   },
   "scripts": {
     "ci": "npm run build && npm run compile && npm run compress",
-    "pkg": "pkg -o dist/f11 -t $(bin/targets) dist/index.min.js",
+    "pkg": "npm run build && pkg -o dist/f11 -t $(bin/targets) .",
     "start": "nodemon src/index.ts",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
     "compile": "npm run pkg && du -sh dist/f11*",
