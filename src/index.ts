@@ -14,8 +14,20 @@ const UNIX_DEFAULT = 'bin/sh';
 const TMP_DIR = `/tmp/.f11`;
 const CMD_PASS = ['ls', 'cat', 'pwd', 'whoami', 'cd', 'curl', 'wget'];
 
+colors.setTheme({
+  ok: ['green'],
+  good: ['green'],
+  warn: ['yellow'],
+  info: ['black', 'bgCyan'],
+  debug: ['dim', 'cyan', 'italic'],
+  error: ['red', 'underline'],
+  fatal: ['white', 'bgRed', 'bold'],
+  prompt: ['trap', 'blue', 'bold'],
+  pending: ['trap', 'blue', 'bold', 'strikethrough']
+});
+
 // Constants
-let PROMPT = colors.blue('💀 f11>') + colors.reset(' ');
+let PROMPT = colors.reset('💀 ') + colors['prompt']('f11>') + colors.reset(' ');
 const NEWLINE = `\r\n`;
 const PORT = 7070;
 const HOST = '0.0.0.0';
@@ -27,16 +39,6 @@ const sockets: SnipeSocket[] = [];
 const timestamp = (): string => new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');
 
 type msgType = 'ok' | 'good' | 'warn' | 'info' | 'debug' | 'error' | 'fatal';
-
-colors.setTheme({
-  ok: ['green'],
-  good: ['green'],
-  warn: ['yellow'],
-  info: ['black', 'bgCyan'],
-  debug: ['dim', 'cyan', 'italic'],
-  error: ['red', 'underline'],
-  fatal: ['white', 'bgRed', 'bold']
-});
 
 const log = (...args) => console.log( colors.gray(timestamp()), ...args);
 const msg = (theme: msgType, body: string, plain?: string) => {
