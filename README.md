@@ -11,6 +11,27 @@
 - SHELL
 
 
+```
+💀 Ӻ11> linpeas
+/tmp/.f11/linpeas.sh - 100.00% (0.74 MB) of total size: 0.74 MB
+💀 Ӻ11> workdir
+Command not found: 'workdir'
+💀 Ӻ11> help
+Command not found: 'help'
+💀 Ӻ11> commands
+Command not found: 'commands'
+💀 Ӻ11> plugins
+Command not found: 'plugins'
+💀 Ӻ11> download
+Command not found: 'download'
+💀 Ӻ11> upload
+Command not found: 'upload'
+💀 Ӻ11> shell
+charlie@galactica:/tmp$ exit
+
+💀 Ӻ11> 
+```
+
 ### Oneliner
 
 ```bash

