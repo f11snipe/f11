@@ -326,9 +326,9 @@ class SnipeSocket {
     if (this.inShell) return;
 
     if (this.loaded) {
-      if (/^run|load/i.test(cmd)) {
+      if (/^run$/i.test(cmd)) {
         this.run(this.loaded.out);
-      } else if (/^stop|unload/i.test(cmd)) {
+      } else if (/^stop$/i.test(cmd)) {
         this.cp?.kill();
         this.reset();
       }
@@ -336,12 +336,20 @@ class SnipeSocket {
       this.shell();
     } else if (Object.keys(LOAD_MAP).includes(cmd)) {
       this.load(cmd);
-    } else if (/^load/i.test(cmd) && args[0]) {
+    } else if (/^load/i.test(cmd)) {
       if (!args[0]) {
         this.sock.write(colors.red(`Missing module: "load <module>"`));
+        this.prompt();
       } else {
         this.load(args[0]);
       }
+    } else if (/^show/i.test(cmd)) {
+      this.sock.write(colors.cyan(`Available modules:\r\n`));
+      Object.keys(LOAD_MAP).forEach(mod => {
+        const map = LOAD_MAP[mod];
+        this.sock.write(colors.reset(`\t☠️ `) + colors.cyan(`'${mod}' => ${map}`));
+      });
+      this.prompt();
     } else {
       this.sock.write(colors['warn'](`Command not found: '${cmd}'`));
       this.prompt();
