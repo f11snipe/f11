@@ -88,25 +88,6 @@ const findNixShell = (): string => {
 
 const findShell = (): string => isNotWindows() ? findNixShell() : findWinShell();
 
-process.stdin.setRawMode(true);
-process.stdin.on("keypress", function(chunk, key) {
-  if(key && key.name === "c" && key.ctrl) {
-    console.log("bye bye");
-    process.exit();
-  }
-});
-
-process.on('SIGINT', function() {
-  const r = Math.round(Math.random() * 100);
-  const t = 75;
-  const c = (r <= t);
-
-  console.log("Caught interrupt signal", { r, t, c });
-
-  if (c) process.exit();
-  else console.log("Continue while(r > t)");
-});
-
 export interface ISystemInfo {
   env: { [key: string]: string|undefined };
   cwd: string;
