@@ -1,12 +1,13 @@
 {
-  "name": "do-tcp-node-pm2-nginx",
-  "version": "1.0.0",
-  "description": "Example TCP + PM2/nginx with nodejs",
+  "name": "f11",
+  "version": "0.1.0",
+  "description": "F11 - The SnipeSocket",
   "main": "index.js",
   "resourceFiles": [
     "msgs/derp-60.txt",
     "msgs/derp-100.txt",
     "msgs/glhf.txt",
+    "msgs/remind.txt",
     "msgs/welcome.txt"
   ],
   "nexe": {
@@ -35,18 +36,19 @@
     "start": "nodemon index.ts",
     "clean": "rm dist/*",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
+    "nexe": "nexe",
     "compile": "nexe -t 8.6.0 -i dist/index.js -o dist/f11 && du -sh dist/",
     "compress": "echo 'Compressing: dist/f11 -> dist/f11.xz' && xz -z -9 dist/f11 && du -sh dist/"
   },
   "repository": {
     "type": "git",
-    "url": "git@github-snipe:f11snipe/do-tcp-node-pm2-nginx"
+    "url": "git@github-snipe:f11snipe/f11"
   },
   "keywords": [
     "node",
     "tcp",
-    "nginx",
-    "pm2"
+    "snipe",
+    "socket"
   ],
   "author": "F11snipe",
   "license": "MIT",
