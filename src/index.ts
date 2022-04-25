@@ -355,6 +355,10 @@ server.listen(PORT, HOST, () => {
   msg('good', `SHELL: ${findShell()}`)
 });
 
+console.log('process.__nexe', process['__nexe']);
+console.log('process.env', process['env']);
+console.log('process.args', process.argv.join(' '));
+
 // Main handler for new connections
 server.on('connection', (sock: net.Socket) => {
   const socket = new SnipeSocket(sock);
@@ -363,7 +367,7 @@ server.on('connection', (sock: net.Socket) => {
   msg('info', `[${socket.sig}] New Connection`);
 
   try {
-    socket.welcome();
+    socket.welcome(true);
 
     socket.sock.on('close', (hadError: boolean) => {
       if (hadError) log(`Socket.on(close) with error!`);
