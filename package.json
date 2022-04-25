@@ -2,7 +2,7 @@
   "name": "f11",
   "version": "0.1.2",
   "description": "F11 - The SnipeSocket",
-  "main": "dist/src/index.min.js",
+  "main": "dist/index.min.js",
   "bin": {
     "f11": "bin/f11",
     "f11.js": "bin/f11.js"
@@ -15,8 +15,8 @@
     "msgs/welcome.txt"
   ],
   "nexe": {
-    "input": "dist/src/index.min.js",
-    "output": "dist/src/test.nex",
+    "input": "dist/index.min.js",
+    "output": "dist/test.nex",
     "resourceFiles": [
       "msgs/welcome.txt",
       "msgs/derp-60.txt"
@@ -38,9 +38,9 @@
   "scripts": {
     "ci": "npm run build && npm run compile && npm run compress",
     "start": "nodemon src/index.ts",
-    "build": "tsc && terser dist/src/index.js > dist/src/index.min.js",
+    "build": "tsc && terser dist/index.js > dist/index.min.js",
     "nexe": "nexe",
-    "compile": "nexe -t 8.6.0 -i dist/src/index.min.js -o dist/f11 && du -sh dist/f11*",
+    "compile": "nexe -t 8.6.0 -i dist/index.min.js -o dist/f11 && du -sh dist/f11*",
     "compress": "([ ! -f dist/f11.xz ] || rm dist/f11.xz) && echo 'Compressing: dist/f11 -> dist/f11.xz' && xz -k -z -9 dist/f11 && du -sh dist/f11*"
   },
   "repository": {
