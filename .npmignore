@@ -1,0 +1,17 @@
+*.js
+*.html
+.*ignore
+
+!dist
+!dist/**/*.js
+!*.d.ts
+!package.json
+!package-lock.json
+
+config
+coverage
+docs
+test
+tmp
+.git
+
