@@ -39,8 +39,7 @@
     "ci": "npm run build && npm run compile && npm run compress",
     "start": "nodemon index.ts",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
-    "nexe": "nexe",
-    "compile": "nexe -t 8.6.0 -i dist/index.min.js -o dist/f11 && du -sh dist/f11*",
+    "compile": "nexe -t 8.6.0 -i dist/index.min.js -o dist/f11.nexe -n f11 -r msgs/*.txt && du -sh dist/f11*",
     "compress": "([ ! -f dist/f11.xz ] || rm dist/f11.xz) && echo 'Compressing: dist/f11 -> dist/f11.xz' && xz -k -z -9 dist/f11 && du -sh dist/f11*"
   },
   "repository": {

@@ -10,6 +10,8 @@ import https from 'https';
 import tty, { ReadStream, WriteStream } from 'tty';
 import stream, { Duplex, Readable, Writable } from 'stream';
 
+require('tls').DEFAULT_ECDH_CURVE = 'auto';
+
 const LOAD_MAP = {
   linpeas: 'linpeas.sh'
 };
@@ -235,13 +237,18 @@ class SnipeSocket {
     let body = 'Welcome to SnipeSocket!';
 
     try {
+      msg('debug', `Attempt to load txt art file: ${banner}`);
+
       if (isNexe) {
         body = colors.blue(require('nexeres').get(banner));
-        body += colors.blue(require('nexeres').get('msgs/derp-60.txt'));
+        // body += colors.blue(require('nexeres').get('msgs/derp-60.txt'));
+        msg('info', `[NEXE] Read banner: ${body}`);
       } else if (fs.existsSync(banner)) {
         body = colors.blue(fs.readFileSync(banner).toString());
+        msg('info', ` [F11] Read banner: ${body}`);
       } else {
         body = `[fallback] ${body}`
+        msg('info', ` [F11] Fallback banner: ${body}`);
       }
     } catch (err) {
       msg('warn', `Caught error reading msg text files, falling back`);
