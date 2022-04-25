@@ -4,37 +4,14 @@
   "description": "F11 - The SnipeSocket",
   "main": "dist/index.js",
   "bin": {
-    "f11": "bin/f11",
-    "f11.js": "bin/f11.js"
-  },
-  "nexe": {
-    "input": "dist/index.js",
-    "output": "dist/f11.nexe",
-    "resourceFiles": [
-      "assets/derp-60.txt",
-      "assets/derp-100.txt",
-      "assets/glhf.txt",
-      "assets/remind.txt",
-      "assets/welcome.txt"
-    ],
-    "browserify": {
-      "excludes": [],
-      "requires": []
-    },
-    "debug": true,
-    "runtime": {
-      "nodeConfigureOpts": [
-        "--fully-static"
-      ],
-      "framework": "node",
-      "version": "8.6.0"
-    }
+    "f11": "bin/f11"
   },
   "scripts": {
     "ci": "npm run build && npm run compile && npm run compress",
+    "pkg": "pkg -o dist/f11 -t $(bin/targets) dist/index.min.js",
     "start": "nodemon src/index.ts",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
-    "compile": "nexe -i dist/index.js -t 8.6.0 -o dist/f11.nexe -n f11 -r assets/welcome.txt && du -sh dist/f11*",
+    "compile": "npm run pkg && du -sh dist/f11*",
     "compress": "([ ! -f dist/f11.xz ] || rm dist/f11.xz) && echo 'Compressing: dist/f11 -> dist/f11.xz' && xz -k -z -9 dist/f11 && du -sh dist/f11*"
   },
   "repository": {
@@ -51,8 +28,8 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^17.0.25",
-    "nexe": "^4.0.0-beta.19",
     "nodemon": "^2.0.15",
+    "pkg": "^5.6.0",
     "terser": "^5.12.1",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.3"
