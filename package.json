@@ -25,7 +25,7 @@
       "excludes": [],
       "requires": []
     },
-    "temp": "../src",
+    "temp": "../tmp",
     "debug": true,
     "runtime": {
       "nodeConfigureOpts": [
@@ -37,7 +37,7 @@
   },
   "scripts": {
     "ci": "npm run build && npm run compile && npm run compress",
-    "start": "nodemon src/index.ts",
+    "start": "nodemon index.ts",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
     "nexe": "nexe",
     "compile": "nexe -t 8.6.0 -i dist/index.min.js -o dist/f11 && du -sh dist/f11*",

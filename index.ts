@@ -27,15 +27,16 @@ colors.setTheme({
   info: ['black', 'bgCyan'],
   debug: ['dim', 'cyan', 'italic'],
   error: ['red', 'underline'],
-  module: ['red', 'bold', 'italic'],
+  module: ['red', 'bold', 'underline'],
   fatal: ['white', 'bgRed', 'bold'],
   prompt: ['trap', 'blue', 'bold'],
   pending: ['trap', 'blue', 'bold', 'strikethrough']
 });
 
 // Constants
-const DEFAULT_PROMPT = colors.reset('💀 ') + colors['prompt']('f11>') + colors.reset(' ');
-let PROMPT = DEFAULT_PROMPT;
+const PROMPT_PREFIX = colors.reset('💀 ')
+const DEFAULT_PROMPT = colors['prompt']('f11>') + colors.reset(' ');
+let PROMPT = PROMPT_PREFIX + DEFAULT_PROMPT;
 const NEWLINE = `\r\n`;
 const PORT = 7070;
 const HOST = '0.0.0.0';
@@ -119,7 +120,7 @@ class SnipeSocket {
   }
 
   public reset(): void {
-    PROMPT = DEFAULT_PROMPT;
+    PROMPT = PROMPT_PREFIX + DEFAULT_PROMPT;
     this.loaded = undefined;
     this.inShell = false;
     this.cleanup();
@@ -170,31 +171,15 @@ class SnipeSocket {
       msg('debug', 'Download Completed');
 
       if (!this.loaded) {
-        this.loaded = {
-          target,
-          file,
-          out,
-          url,
-          dir,
-          err
-        };
-        PROMPT = colors['rainbow'](this.loaded.target) + colors.reset(' | ') + PROMPT;
+        this.loaded = { target, file, out, url, dir, err };
+        PROMPT = colors.reset('💀 [') + colors['module'](this.loaded.target) + colors.reset('] ') + DEFAULT_PROMPT;
       }
 
       this.sock.write(NEWLINE);
       this.sock.write(colors.green(`Loaded: ${target}`));
       this.sock.write(NEWLINE);
-      // this.sock.write(colors.yellow(`Executing: ${out}`));
-      // this.sock.write(NEWLINE);
 
       this.prompt();
-      // execSync(`chmod +x ${out}`);
-      // this.run(out, cb);
-
-      // this.spawn('bash', [out], { shell: true, detached: true }, (code) => {
-      //   this.prompt();
-      //   if (cb) cb(code);
-      // });
     });
   }
 
@@ -238,7 +223,6 @@ class SnipeSocket {
   public progress(msg, cur, max, total) {
     const stamp = colors.yellow(`${msg} - ${(100.0 * cur / max).toFixed(2)}% (${(cur / 1048576).toFixed(2)} MB) of total size: ${total.toFixed(2)} MB`);
     this.sock.write(`\r${stamp}`);
-    // console.log(`\r${stamp}`);
   }
 
   public prompt(): void {
@@ -336,9 +320,9 @@ class SnipeSocket {
       this.shell();
     } else if (Object.keys(LOAD_MAP).includes(cmd)) {
       this.load(cmd);
-    } else if (/^load/i.test(cmd)) {
+    } else if (/^use|load$/i.test(cmd)) {
       if (!args[0]) {
-        this.sock.write(colors.red(`Missing module: "load <module>"`));
+        this.sock.write(colors.red(`Missing module: "use|load <module>"`));
         this.prompt();
       } else {
         this.load(args[0]);
