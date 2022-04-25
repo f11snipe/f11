@@ -37,7 +37,7 @@
   },
   "scripts": {
     "ci": "npm run build && npm run compile && npm run compress",
-    "start": "nodemon index.ts",
+    "start": "nodemon src/index.ts",
     "build": "tsc && terser dist/src/index.js > dist/src/index.min.js",
     "nexe": "nexe",
     "compile": "nexe -t 8.6.0 -i dist/src/index.min.js -o dist/f11 && du -sh dist/f11*",

