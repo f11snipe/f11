@@ -248,7 +248,7 @@ class SnipeSocket {
 
       response.on('data', (chunk) => {
         cur += chunk.length;
-        this.progress(`Download: ${url} -> ${file}`, cur, len, total);
+        this.progress(`Downloading: `, cur, len, total);
       });
 
       response.on('end', () => {
