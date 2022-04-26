@@ -349,7 +349,7 @@ class SnipeSocket {
 
     if (/^w?get|download$/i.test(cmd)) {
       const doShit = () => {
-        const name = this.loaded.target || args[0];
+        const name = this.loaded?.target || args[0];
         const file = `${TMP_DIR}/${name}`;
         const url = args[1] || `${WEB_HOST}/${name}`;
 
