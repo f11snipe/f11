@@ -14,9 +14,9 @@ import stream, { Duplex, Readable, Writable } from 'stream';
 // process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
 const LOAD_MAP = {
-  linpeas: 'linpeas.sh',
-  random: 'random.sh',
-  slideshow: 'slideshow.sh'
+  'linpeas.sh': 'linpeas.sh',
+  'random.sh': 'random.sh',
+  'slideshow.sh': 'slideshow.sh'
 };
 
 const WEB_HOST = 'https://f11snipe.sh/sh';
