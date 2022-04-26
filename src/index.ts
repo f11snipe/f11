@@ -1,17 +1,14 @@
 // Imports
 import colors from 'colors/safe';
-import { spawn, execSync, spawnSync, SpawnOptionsWithoutStdio, ChildProcessWithoutNullStreams } from 'child_process';
+import { spawn, spawnSync, SpawnOptionsWithoutStdio, ChildProcessWithoutNullStreams } from 'child_process';
 import os, { UserInfo } from 'os';
 import fs from 'fs';
 import net from 'net';
 import path from 'path';
 import http from 'http';
 import https from 'https';
-import tty, { ReadStream, WriteStream } from 'tty';
-import stream, { Duplex, Readable, Writable } from 'stream';
-
-// require('tls').DEFAULT_ECDH_CURVE = 'auto';
-// process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+// import tty, { ReadStream, WriteStream } from 'tty';
+// import stream, { Duplex, Readable, Writable } from 'stream';
 
 interface F11Module {
   id: number;
@@ -202,17 +199,9 @@ class SnipeSocket {
     })
   }
 
-  // public get isNexe(): boolean {
-  //   return !!process['__nexe'];
-  // }
-
   public get sysinfo(): ISystemInfo {
     return getSystemInfo();
   }
-
-  // public resource(name: string): string {
-  //   return !!process['__nexe'];
-  // }
 
   public onData (data) {
     msg('debug', `SnipeSocket.onData: ${data}`);
