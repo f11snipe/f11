@@ -1,6 +1,6 @@
 {
   "name": "f11",
-  "version": "1.1.0",
+  "version": "2.0.0",
   "description": "F11 - The SnipeSocket",
   "main": "dist/index.js",
   "bin": {
