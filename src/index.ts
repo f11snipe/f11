@@ -422,14 +422,7 @@ class SnipeSocket {
             details: args[2] || name
           };
 
-          this.loaded = LOAD_MAP[name];
-
-          this.sock.write(NEWLINE);
-          this.sock.write(NEWLINE);
-          this.sock.write(colors.cyan(`#### Load new download: load ${name}`));
-          this.sock.write(NEWLINE);
-
-          this.prompt();
+          this.load(name);
         });
       };
 
@@ -472,8 +465,6 @@ class SnipeSocket {
         this.sock.write(colors.gray(`\t#${mod.id} [`) + colors['module'](name) + colors.gray(`] `));
         this.sock.write(NEWLINE);
         this.sock.write(colors['details'](`\t\t- ${mod.details} (${mod.href})`));
-
-        // this.sock.write(colors.reset(`${NEWLINE}\t☠️ `) + colors.cyan(`'${name}' => ${mod.}`));
       });
 
       this.sock.write(NEWLINE);
