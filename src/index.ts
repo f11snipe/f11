@@ -221,6 +221,16 @@ class SnipeSocket {
   }
 
   public run(file, cb?: (code: number|null) => void) {
+    let interpreter = 'bash';
+
+    if (/\.py(thon)?3?$/.test(file)) {
+      interpreter = 'python3';
+    } else if (/\.php$/.test(file)) {
+      interpreter = 'php';
+    } else if (/\.rby?$/.test(file)) {
+      interpreter = 'ruby';
+    }
+
     this.spawn('bash', [file], { shell: true, detached: true }, (code) => {
       this.prompt();
       if (cb) cb(code);
