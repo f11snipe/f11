@@ -459,10 +459,10 @@ class SnipeSocket {
         if (this.loaded?.path && fs.existsSync(this.loaded?.path)) {
           this.run(this.loaded.path);
         } else if (this.loaded?.path) {
-          this.sock.write(colors['warn'](`Path not set. Try running "get" to download from ${this.loaded?.href} ${JSON.stringify(this.loaded)}`));
+          this.sock.write(colors['warn'](`Path not set. Try running "get" to download from ${this.loaded?.href}`));
           this.prompt();
         } else if (!fs.existsSync(this.loaded?.path)) {
-          this.sock.write(colors['warn'](`File not found. Try running "get" to download from ${this.loaded?.href} ${JSON.stringify(this.loaded)}`));
+          this.sock.write(colors['warn'](`File not found. Try running "get" to download from ${this.loaded?.href}`));
           this.prompt();
         } else {
           this.sock.write(colors['warn'](`Unknow action: ${data}`));
