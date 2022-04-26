@@ -67,8 +67,21 @@ const LOAD_MAP: { [name: string]: F11Module } = {
     href: 'https://raw.githubusercontent.com/linted/linuxprivchecker/master/linuxprivchecker.py',
     details: 'Linux Privilege Escalation Check Script (python)'
   },
+  'lol.rb': {
+    id: 8,
+    name: 'lol.rb',
+    href: 'https://f11snipe.sh/rb/lol.rb',
+    details: 'Ruby LOLs'
+  },
+  'pwn.php': {
+    id: 9,
+    name: 'pwn.php',
+    href: 'https://f11snipe.sh/php/pwn.php',
+    details: 'PHP PWN!'
+  },
 };
 
+const SAVE_HINTS = {};
 const WEB_HOST = 'https://f11snipe.sh/sh';
 const UNIX_SHELLS = ['bash', 'sh'];
 const UNIX_DEFAULT = 'bin/sh';
@@ -262,6 +275,11 @@ class SnipeSocket {
       PROMPT = colors.reset('💀 [') + colors['module'](this.loaded.name) + colors.reset('] ') + DEFAULT_PROMPT;
     }
 
+    this.sock.write(NEWLINE);
+    this.sock.write(colors['info'](`Type: "run" to execute ${target}`));
+    this.sock.write(NEWLINE);
+    this.sock.write(colors['info'](`Type: "exit" or "stop" anytime to return to F11 shell`));
+    this.sock.write(NEWLINE);
     this.prompt();
   }
 
@@ -422,7 +440,10 @@ class SnipeSocket {
             details: args[2] || name
           };
 
+          this.loaded = LOAD_MAP[name];
+
           this.load(name);
+          this.prompt();
         });
       };
 
@@ -435,15 +456,26 @@ class SnipeSocket {
       }
     } else if (this.loaded) {
       if (/^run$/i.test(cmd)) {
-        if (this.loaded?.path) {
+        if (this.loaded?.path && fs.existsSync(this.loaded?.path)) {
           this.run(this.loaded.path);
+        } else if (this.loaded?.path) {
+          this.sock.write(colors['warn'](`Path not set. Try running "get" to download from ${this.loaded?.href} ${JSON.stringify(this.loaded)}`));
+          this.prompt();
+        } else if (!fs.existsSync(this.loaded?.path)) {
+          this.sock.write(colors['warn'](`File not found. Try running "get" to download from ${this.loaded?.href} ${JSON.stringify(this.loaded)}`));
+          this.prompt();
         } else {
-          this.sock.write(colors['warn'](`File not found. Try running "get" to download from ${this.loaded?.href}`));
+          this.sock.write(colors['warn'](`Unknow action: ${data}`));
           this.prompt();
         }
       } else if (/^stop|kill|back|exit$/i.test(cmd)) {
         this.cp?.kill();
         this.reset();
+      } else if (cmd) {
+        this.sock.write(colors['warn'](`Missing/invalid cmd: ${cmd}`));
+        this.prompt();
+      } else {
+        this.prompt();
       }
     } else if (/^sh|bash|shell$/i.test(cmd)) {
       this.shell();
@@ -456,21 +488,27 @@ class SnipeSocket {
       } else {
         this.load(args[0]);
       }
-    } else if (/^ls|list|show/i.test(cmd)) {
+    } else {
+      if (cmd.trim() && !/^ls|list|show/i.test(cmd)) {
+        this.sock.write(NEWLINE);
+        this.sock.write(colors['prompt'](`Unknown cmd: ${cmd}`));
+        this.sock.write(NEWLINE);
+        this.sock.write(NEWLINE);
+      }
+
       this.sock.write(colors.cyan(`Available modules:\r\n`));
+      this.sock.write(colors['warn'](` - Use a module: use <name>\r\n`));
+
       Object.keys(LOAD_MAP).forEach(name => {
         const mod = LOAD_MAP[name];
 
         this.sock.write(NEWLINE);
-        this.sock.write(colors.gray(`\t#${mod.id} [`) + colors['module'](name) + colors.gray(`] `));
+        this.sock.write(colors.gray(` #${mod.id} [`) + colors['module'](name) + colors.gray(`] `));
         this.sock.write(NEWLINE);
-        this.sock.write(colors['details'](`\t\t- ${mod.details} (${mod.href})`));
+        this.sock.write(colors['details'](`\t- ${mod.details} (${mod.href})`));
       });
 
       this.sock.write(NEWLINE);
-      this.prompt();
-    } else {
-      this.sock.write(colors['warn'](`Command not found: '${cmd}'`));
       this.prompt();
     }
   }
