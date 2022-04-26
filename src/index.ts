@@ -231,7 +231,7 @@ class SnipeSocket {
       interpreter = 'ruby';
     }
 
-    this.spawn('bash', [file], { shell: true, detached: true }, (code) => {
+    this.spawn(interpreter, [file], { shell: true, detached: true }, (code) => {
       this.prompt();
       if (cb) cb(code);
     });
