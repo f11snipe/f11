@@ -34,7 +34,7 @@ const LOAD_MAP: { [name: string]: F11Module } = {
   'linpeas.sh': {
     id: 2,
     name: 'linpeas.sh',
-    href: 'https://linpeas.sh',
+    href: 'https://f11snipe.sh/sh/linpeas.sh',
     details: 'linPEAS!'
   },
   'le.sh': {
@@ -402,7 +402,7 @@ class SnipeSocket {
 
     if (this.inShell) return;
 
-    if (/^w?get|download$/i.test(cmd)) {
+    if (/^w?get|add|download$/i.test(cmd)) {
       const doShit = () => {
         const name = this.loaded?.name || args[0];
         const file = `${TMP_DIR}/${name}`;
