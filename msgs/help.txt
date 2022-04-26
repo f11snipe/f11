@@ -9,4 +9,19 @@
 -------------------
  Available Modules
 -------------------
+  **** LINUX *****
   - linpeas
+
+  **** WINDOWS *****
+  - 
+
+
+-------------------
+  Scanning
+-------------------
+  - nikto
+  - nmap/rust?
+  - fuzzer(s)?
+  - buster(s)?
+
+

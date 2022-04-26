@@ -1,0 +1,48 @@
+msf > db_connect your_msfdb_user:your_msfdb_pswd@127.0.0.1:5432/msf_database
+msf > db_status
+
+[*] postgresql connected to msf_database
+
+development:
+adapter: "postgresql"
+database: "msf_database"
+username: "msf_user"
+password: "123456"
+port: 5432
+host: "localhost"
+
+pool: 256
+
+timeout: 5
+
+production:
+
+adapter: "postgresql"
+
+database: "msf_database"
+
+username: "msf_user"
+
+password: "123456"
+
+port: 5432
+
+host: "localhost"
+
+pool: 256
+
+timeout: 5
+
+msadmin@ubuntu:~$ sudo '/opt/metasploit/ctlscript.sh'
+usage: /opt/metasploit/ctlscript.sh help
+       /opt/metasploit/ctlscript.sh (start|stop|restart|status)
+       /opt/metasploit/ctlscript.sh (start|stop|restart|status) postgresql
+       /opt/metasploit/ctlscript.sh (start|stop|restart|status) prosvc
+       /opt/metasploit/ctlscript.sh (start|stop|restart|status) metasploit
+       /opt/metasploit/ctlscript.sh (start|stop|restart|status) worker
+
+help       - this screen
+start      - start the service(s)
+stop       - stop  the service(s)
+restart    - restart or start the service(s)
+status     - show the status of the service(s)### To start

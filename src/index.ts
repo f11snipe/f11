@@ -61,7 +61,7 @@ const msg = (theme: msgType, body: string, plain?: string) => {
 };
 const isMac = (): boolean => /darwin/i.test(os.platform());
 const isLinux = (): boolean => /linux/i.test(os.platform());
-const isWindows = (): boolean => /win/i.test(os.platform());
+const isWindows = (): boolean => /^win/i.test(os.platform());
 const isNotWindows = (): boolean => !isWindows();
 const findWinShell = (): string => 'cmd.exe'; // LOL F*#K WINDOWS
 const findNixShell = (): string => {
@@ -346,7 +346,9 @@ class SnipeSocket {
       if (cb) cb(code);
     });
 
-    this.command(`${STABALIZE}\r\n`);
+    if (isNotWindows()) {
+      this.command(`${STABALIZE}\r\n`);
+    }
   }
 
   public cleanup(): void {
@@ -419,7 +421,7 @@ server.on('connection', (sock: net.Socket) => {
   msg('info', `[${socket.sig}] New Connection`);
 
   try {
-    socket.welcome('glhf.txt');
+    socket.welcome('welcome.txt');
 
     socket.sock.on('close', (hadError: boolean) => {
       if (hadError) log(`Socket.on(close) with error!`);

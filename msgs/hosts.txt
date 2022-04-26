@@ -1,0 +1,6 @@
+# Example hosts by platform
+
+192.168.1.13    macos
+192.168.1.24    win11
+192.168.1.29    kali
+
