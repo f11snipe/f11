@@ -1,5 +1,5 @@
-# f11
-*revshellpal*
+# F11
+*The SnipeSocket*
 
 
 ### Install via NPM
@@ -9,13 +9,30 @@ npm i -g f11
 f11
 ```
 
+### Standalone hosted (compressed) binaries
+- [f11-linux.xz](https://f11snipe.sh/f11-linux.xz)
+- [f11-macos.xz](https://f11snipe.sh/f11-macos.xz)
+- [f11-win.exe.xz](https://f11snipe.sh/f11-win.exe.xz)
 
-### Standalone one-liner
+
+### One-liner (linux)
 
 ```bash
-rm /tmp/f11; curl -sL https://f11snipe.sh/f11.xz -o /tmp/f11.xz && xz -d /tmp/f11.xz && chmod +x /tmp/f11 && /tmp/f11
+rm /tmp/f11-linux; curl -sL https://f11snipe.sh/f11-linux.xz -o /tmp/f11-linux.xz && xz -d /tmp/f11-linux.xz && chmod +x /tmp/f11-linux && /tmp/f11-linux
 ```
 
+### One-liner (osx)
+
+```bash
+rm /tmp/f11-macos; curl -sL https://f11snipe.sh/f11-macos.xz -o /tmp/f11-macos.xz && xz -d /tmp/f11-macos.xz && chmod +x /tmp/f11-macos && /tmp/f11-macos
+```
+
+
+### One-liner (windows)
+
+```bash
+rm /tmp/f11-win.exe; curl -sL https://f11snipe.sh/f11-win.exe.xz -o /tmp/f11-win.exe.xz && xz -d /tmp/f11-win.exe.xz && chmod +x /tmp/f11-win.exe && /tmp/f11-win.exe
+```
 
 ### Run included standalone bind shell
 
