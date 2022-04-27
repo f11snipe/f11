@@ -102,7 +102,7 @@ npm run compress
 - support both TCP + TLS (with unique credentials)
 - basic http(s) server to serve as web host/relay (on isolated VPN, i.e. THM)
   - web gui??
-- add simple bash "stablizer" wrapper to spawn nc/socat rev connect
+- add simple bash "stabilizer" wrapper to spawn nc/socat reverse connection
 - support both "bind" and "rev" client/server open port scenarios
 - better handling of navigation and special characters, signals, etc
 
