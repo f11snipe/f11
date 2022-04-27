@@ -1,0 +1,52 @@
+-------------
+F11 Help Menu
+-------------
+  - help    (show this help menu)             |   aliases: "?", "how", "man", "wtf", "fuck"
+  - sh      (drop into stable shell)          |   aliases: "cmd", "bash", "shell", "lemmein"
+  - ls      (show available modules)          |   aliases: "list", "show", "modules"
+  - use     (use available module)            |   aliases: "load", "pick", "gimme"
+  - get     (update/install module from url)  |   aliases: "add", "wget", "download"
+  - run     (run loaded module)               |   aliases: "ya", "doit", "exec", "execute"
+  - stop    (stop or cancel loaded module)    |   aliases: "kill", "back", "exit", "quit"
+      ^
+      | "stop" can be run ANYTIME (during execution of module) to return to F11 shell
+
+
+-----------
+F11 Modules
+-----------
+  - Get, run, and stop an existing module (download/update)
+                f11> use random.sh
+    [random.sh] f11> get
+    [random.sh] f11> run
+    [random.sh] f11> stop
+                f11>
+  - Get, run, and stop an existing module from a new url (update/overwrite)
+                f11> get random.sh https://example.com/newscript.sh
+                f11> use random.sh
+    [random.sh] f11> run
+    [random.sh] f11> stop
+                f11>
+  - Install a new module, use, run and stop (see supported interpreters below)
+                f11> get script.sh https://abc.co/scrpt.sh "Details about new module"
+                f11> use script.sh
+    [script.sh] f11> run
+    [script.sh] f11> stop
+                f11> run
+  - NOTE: File extensions on module names are used to determine interpreter
+          Default will run using "bash", see supported list below for more info
+
+
+----------------------
+Supported Interpreters
+----------------------
+  - Ext: ".sh"  -> bash      |   aliases: DEFAULT (any non-matched extension)
+  - Ext: ".py"  -> python3   |   aliases: ".py3", ".python", ".python3"
+  - Ext: ".rb"  -> ruby      |   aliases: ".rby"
+  - Ext: ".php" -> php       |   aliases: none
+
+
+-------------------
+ Available Modules
+-------------------
+ - Use "ls" to show available Modules

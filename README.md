@@ -2,52 +2,60 @@
 *The SnipeSocket*
 
 
-### Install via NPM
+## One curl to rule them all
 
 ```bash
-npm i -g f11
-f11
+# Fuk it just do everything for me
+curl -sL https://f11.sh | bash
+
+# Connect to F11 bind server (IP:1337)
+socat stdio tcp:localhost:1337
+
+# Also works with netcat & telnet :)
+nc localhost 1337
+
+# Or for the old guys
+telnet localhost 1337
 ```
 
-### Standalone hosted (compressed) binaries
+## Preview
+
+![f11-demo](https://f11.sh/demo.gif)
+
+*Stay tuned! More to come on [f11.sh](https://f11.sh)*
+
+## Install via NPM
+
+```bash
+npm i -g f11 && f11
+```
+
+## Standalone hosted (compressed) binaries
 - [f11-linux.xz](https://f11snipe.sh/f11-linux.xz)
 - [f11-macos.xz](https://f11snipe.sh/f11-macos.xz)
 - [f11-win.exe.xz](https://f11snipe.sh/f11-win.exe.xz)
 
 
-### One-liner (linux)
+## Dedicated platform one-liner (linux)
 
 ```bash
 rm /tmp/f11-linux; curl -sL https://f11snipe.sh/f11-linux.xz -o /tmp/f11-linux.xz && xz -d /tmp/f11-linux.xz && chmod +x /tmp/f11-linux && /tmp/f11-linux
 ```
 
-### One-liner (osx)
+## Dedicated platform one-liner (osx)
 
 ```bash
 rm /tmp/f11-macos; curl -sL https://f11snipe.sh/f11-macos.xz -o /tmp/f11-macos.xz && xz -d /tmp/f11-macos.xz && chmod +x /tmp/f11-macos && /tmp/f11-macos
 ```
 
 
-### One-liner (windows)
+## Dedicated platform one-liner (windows)
 
 ```bash
 rm /tmp/f11-win.exe; curl -sL https://f11snipe.sh/f11-win.exe.xz -o /tmp/f11-win.exe.xz && xz -d /tmp/f11-win.exe.xz && chmod +x /tmp/f11-win.exe && /tmp/f11-win.exe
 ```
 
-### Run included standalone bind shell
-
-```bash
-# Extract archive
-xz -d f11-bind.xz
-
-# Allow execute
-chmod +x f11-bind
-
-# Run rev bind shell (port 7070)
-./f11-bind
-```
-
-### Build from source
+## Build from source
 
 ```bash
 # Run all build steps
@@ -56,7 +64,7 @@ npm run ci
 ```
 
 
-#### Individual build steps
+### Individual build steps
 ```bash
 # Install npm packages
 npm install
@@ -71,10 +79,23 @@ npm run compile
 npm run compress
 ```
 
-### TODO - Modules to support
+## TODO
 
-- linpeas (other peas?)
-  - https://github.com/carlospolop/PEASS-ng/tree/master/linPEAS
+#### Core features
+- command history
+- module groups, tags, etc?
+- plugins? (additional features, how would this differ from modules? "extending")
+- built-in encoder
+  - relay/lookup via online services? (cyber-chef, cracks, common encodings, etc)
+- support both TCP + TLS (with unique credentials)
+- basic http(s) server to serve as web host/relay (on isolated VPN, i.e. THM)
+  - web gui??
+- add simple bash "stablizer" wrapper to spawn nc/socat rev connect
+- support both "bind" and "rev" client/server open port scenarios
+- better handling of navigation and special characters, signals, etc
+
+
+#### Modules to support
 - pwnkit
   - https://github.com/ly4k/PwnKit
 - mimikatz (windows)
@@ -82,10 +103,3 @@ npm run compress
 - SUID/SUDO/CAP/
   - https://book.hacktricks.xyz/linux-unix/privilege-escalation#sudo-and-suid
 
-
-### Other modules?
-- https://github.com/mzet-/linux-exploit-suggester
-- https://github.com/diego-treitos/linux-smart-enumeration
-- https://github.com/linted/linuxprivchecker
-- custom?
-  - https://book.hacktricks.xyz/linux-unix/privilege-escalation#sudo-and-suid

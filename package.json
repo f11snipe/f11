@@ -10,8 +10,7 @@
   "pkg": {
     "scripts": "dist/index.min.js",
     "assets": [
-      "msgs/**/*",
-      "assets/**/*"
+      "art/**/*"
     ],
     "compress": "GZip",
     "ouput": "dist/f11"

