@@ -1,6 +1,7 @@
 # F11
-*The SnipeSocket*
+### *The SnipeSocket*
 
+EST. Apr 23, 2022
 
 ## One curl to rule them all
 
