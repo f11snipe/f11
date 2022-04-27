@@ -7,20 +7,28 @@
 ```bash
 # Fuk it just do everything for me
 curl -sL https://f11.sh | bash
+```
 
+### Just connect to bind host:port
+```bash
 # Connect to F11 bind server (IP:1337)
 socat stdio tcp:localhost:1337
+```
 
+```bash
 # Also works with netcat & telnet :)
 nc localhost 1337
+```
 
+```bash
 # Or for the old guys
 telnet localhost 1337
 ```
 
-## Preview
+## PoC
 
-![f11-demo](https://f11.sh/demo.gif)
+![poc](https://user-images.githubusercontent.com/26688050/165448887-1982ecc2-1ca8-4c91-8ea1-20c7f63a5541.gif)
+
 
 *Stay tuned! More to come on [f11.sh](https://f11.sh)*
 
