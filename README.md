@@ -81,6 +81,9 @@ npm run compress
 
 ## TODO
 
+#### Cleanup
+- better intro/helper messaging
+
 #### Core features
 - command history
 - module groups, tags, etc?
@@ -94,6 +97,9 @@ npm run compress
 - support both "bind" and "rev" client/server open port scenarios
 - better handling of navigation and special characters, signals, etc
 
+
+#### Obfuscation
+- LATER
 
 #### Modules to support
 - pwnkit

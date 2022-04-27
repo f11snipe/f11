@@ -288,18 +288,25 @@ class SnipeSocket {
   public run(file, cb?: (code: number|null) => void) {
     let interpreter = 'bash';
 
+    // TODO: Check interpreter exists before attempting? (at least catch the error)
+
     if (/\.py(thon)?3?$/.test(file)) {
       interpreter = 'python3';
     } else if (/\.php$/.test(file)) {
       interpreter = 'php';
     } else if (/\.rby?$/.test(file)) {
       interpreter = 'ruby';
+    } else if (/\.go$/.test(file)) {
+      interpreter = 'go';
     }
 
     this.spawn(interpreter, [file], { shell: true, detached: true }, (code) => {
       this.prompt();
       if (cb) cb(code);
     });
+    msg('error', `Caught error attempting to run: ${file}`);
+    this.sock.write(colors['error'](`Failed running: ${file}`));
+    this.prompt();
   }
 
   public download(file, url, cb?: (err?: Error) => void): http.ClientRequest {
@@ -338,7 +345,7 @@ class SnipeSocket {
     this.sock.write(`${NEWLINE}${PROMPT}`);
   }
 
-  public ascii(art = 'welcome.txt', color = 'blue'): void {
+  public ascii(art = 'welcome.txt', color = 'blue', doPrompt = true): void {
     const banner = path.join(__dirname, '../art', art);
     let body = `Load ascii: ${art}`;
 
@@ -357,8 +364,7 @@ class SnipeSocket {
     }
 
     this.sock.write(body);
-
-    this.prompt();
+    if (doPrompt) this.prompt();
   }
 
   public spawn(cmd: string, args: string[] = [], opts?: SpawnOptionsWithoutStdio, cb?: (code: number|null) => void) {
@@ -383,6 +389,13 @@ class SnipeSocket {
       msg('debug', `[spawn] Child process exited with code ${code}`);
       this.cleanup();
       if (cb) cb(code);
+    });
+
+    this.cp.on('error', (err) => {
+      msg('error', `Spawn error attempting to run: ${cmd} ${args.join(' ')}`);
+      this.sock.write(colors['error'](`Failed running: ${cmd} ${args.join(' ')}`));
+      this.cleanup();
+      if (cb) cb(1);
     });
   }
 
@@ -440,9 +453,9 @@ class SnipeSocket {
             details: args[2] || name
           };
 
-          this.loaded = LOAD_MAP[name];
+          // this.loaded = LOAD_MAP[name];
 
-          this.load(name);
+          // this.load(name);
           this.prompt();
         });
       } else {
@@ -532,7 +545,8 @@ server.on('connection', (sock: net.Socket) => {
 
   try {
     socket.reset(false);
-    socket.ascii('welcome.txt');
+    socket.ascii('banner.txt', 'blue', false);
+    socket.ascii('menu.txt', 'cyan');
 
     socket.sock.on('close', (hadError: boolean) => {
       if (hadError) log(`Socket.on(close) with error!`);

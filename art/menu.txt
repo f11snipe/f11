@@ -1,0 +1,12 @@
+--------
+F11 Menu
+--------
+  - help    (show this help menu)             |   aliases: "?", "how", "man", "wtf", "fuck"
+  - sh      (drop into stable shell)          |   aliases: "cmd", "bash", "shell", "lemmein"
+  - ls      (show available modules)          |   aliases: "list", "show", "modules"
+  - use     (use available module)            |   aliases: "load", "pick", "gimme"
+  - get     (update/install module from url)  |   aliases: "add", "wget", "download"
+  - run     (run loaded module)               |   aliases: "ya", "doit", "exec", "execute"
+  - stop    (stop or cancel loaded module)    |   aliases: "kill", "back", "exit", "quit"
+      ^
+      | "stop" can be run ANYTIME (during execution of module) to return to F11 shell

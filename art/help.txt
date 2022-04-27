@@ -1,6 +1,6 @@
--------------
-F11 Help Menu
--------------
+--------
+F11 Menu
+--------
   - help    (show this help menu)             |   aliases: "?", "how", "man", "wtf", "fuck"
   - sh      (drop into stable shell)          |   aliases: "cmd", "bash", "shell", "lemmein"
   - ls      (show available modules)          |   aliases: "list", "show", "modules"
@@ -10,7 +10,6 @@ F11 Help Menu
   - stop    (stop or cancel loaded module)    |   aliases: "kill", "back", "exit", "quit"
       ^
       | "stop" can be run ANYTIME (during execution of module) to return to F11 shell
-
 
 -----------
 F11 Modules
@@ -36,7 +35,6 @@ F11 Modules
   - NOTE: File extensions on module names are used to determine interpreter
           Default will run using "bash", see supported list below for more info
 
-
 ----------------------
 Supported Interpreters
 ----------------------
@@ -44,7 +42,6 @@ Supported Interpreters
   - Ext: ".py"  -> python3   |   aliases: ".py3", ".python", ".python3"
   - Ext: ".rb"  -> ruby      |   aliases: ".rby"
   - Ext: ".php" -> php       |   aliases: none
-
 
 -------------------
  Available Modules
