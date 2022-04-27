@@ -118,3 +118,6 @@ npm run compress
 - SUID/SUDO/CAP/
   - https://book.hacktricks.xyz/linux-unix/privilege-escalation#sudo-and-suid
 
+#### Contributions
+- Please feel free to contribute!
+
