@@ -488,6 +488,8 @@ class SnipeSocket {
       } else {
         this.load(args[0]);
       }
+    } else if (/^derp$/i.test(cmd)) {
+      this.ascii('derp.txt');
     } else {
       if (cmd.trim() && !/^ls|list|show|modules/i.test(cmd)) {
         this.sock.write(NEWLINE);
