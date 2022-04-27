@@ -90,6 +90,9 @@ const CMD_PASS = ['ls', 'cat', 'pwd', 'whoami', 'cd', 'curl', 'wget'];
 
 colors.setTheme({
   ok: ['green'],
+  get: ['italic', 'green', 'underline'],
+  run: ['italic', 'yellow', 'underline'],
+  end: ['italic', 'red', 'bold', 'underline'],
   good: ['green'],
   warn: ['yellow'],
   info: ['black', 'bgCyan'],
@@ -256,10 +259,13 @@ class SnipeSocket {
   }
 
   public load(target: string | number, cb?: (code: number|null) => void): void {
-    if (this.loaded && this.loaded.name === target) {
-      if (cb) cb(0);
-      return;
-    }
+    // if (this.loaded && this.loaded.name === target) {
+    //   this.sock.write(NEWLINE);
+    //   this.sock.write(colors['error'](`Module already loaded: ${this.loaded.name}`));
+    //   this.sock.write(NEWLINE);
+    //   if (cb) cb(0);
+    //   return;
+    // }
 
     // TODO: Add find by id (when target is a number)
 
@@ -270,25 +276,26 @@ class SnipeSocket {
       return;
     }
 
-    if (!this.loaded) {
-      this.loaded = LOAD_MAP[target];
-      PROMPT = colors.reset('💀 [') + colors['module'](this.loaded.name) + colors.reset('] ') + DEFAULT_PROMPT;
+    if (this.loaded) {
+      this.sock.write(colors['warn'](`Leaving module context: ${this.loaded.name} (loading new module: ${target})`));
     }
 
+    this.loaded = LOAD_MAP[target];
+    PROMPT = colors.reset('💀 [') + colors['module'](this.loaded.name) + colors.reset('] ') + DEFAULT_PROMPT;
+
     this.sock.write(NEWLINE);
-    this.sock.write(colors['info'](`Type: "run" to execute ${target}`));
     this.sock.write(NEWLINE);
-    this.sock.write(colors['info'](`Type: "get" to download (or update) ${target}`));
+    this.sock.write(colors.cyan(`Type: `) + colors['run']('run') + colors.cyan(` to execute ${target}`));
     this.sock.write(NEWLINE);
-    this.sock.write(colors['info'](`Type: "exit" or "stop" anytime to return to F11 shell`));
+    this.sock.write(colors.cyan(`Type: `) + colors['get']('get') + colors.cyan(` to download (or update) ${target}`));
+    this.sock.write(NEWLINE);
+    this.sock.write(colors.cyan(`Type: `) + colors['end']('stop') + colors.cyan(` or `) + colors['end']('exit') + colors.cyan(` anytime to return to F11 shell`));
     this.sock.write(NEWLINE);
     this.prompt();
   }
 
   public run(file, cb?: (code: number|null) => void) {
     let interpreter = 'bash';
-
-    // TODO: Check interpreter exists before attempting? (at least catch the error)
 
     if (/\.py(thon)?3?$/.test(file)) {
       interpreter = 'python3';
@@ -304,9 +311,6 @@ class SnipeSocket {
       this.prompt();
       if (cb) cb(code);
     });
-    msg('error', `Caught error attempting to run: ${file}`);
-    this.sock.write(colors['error'](`Failed running: ${file}`));
-    this.prompt();
   }
 
   public download(file, url, cb?: (err?: Error) => void): http.ClientRequest {
@@ -341,7 +345,6 @@ class SnipeSocket {
   }
 
   public prompt(): void {
-    // this.cp?.stdin?.write(' ');
     this.sock.write(`${NEWLINE}${PROMPT}`);
   }
 
@@ -393,7 +396,11 @@ class SnipeSocket {
 
     this.cp.on('error', (err) => {
       msg('error', `Spawn error attempting to run: ${cmd} ${args.join(' ')}`);
-      this.sock.write(colors['error'](`Failed running: ${cmd} ${args.join(' ')}`));
+      this.sock.write(NEWLINE);
+      this.sock.write(colors['fatal'](`FAILED: ${cmd} ${args.join(' ')}`));
+      this.sock.write(NEWLINE);
+      this.sock.write(colors.yellow(err.message))
+      this.sock.write(NEWLINE);
       this.cleanup();
       if (cb) cb(1);
     });
@@ -453,10 +460,8 @@ class SnipeSocket {
             details: args[2] || name
           };
 
-          // this.loaded = LOAD_MAP[name];
-
-          // this.load(name);
-          this.prompt();
+          this.loaded = LOAD_MAP[name];
+          this.load(name);
         });
       } else {
         this.sock.write(colors['warn'](`Usage: get <module> [<url>] [<details>]`));
