@@ -1,4 +1,4 @@
-# F11
+# F11 - Fully Featured Bind Shell
 ### *The SnipeSocket*
 
 EST. Apr 23, 2022
