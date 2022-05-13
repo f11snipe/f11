@@ -19,6 +19,7 @@
     "ci": "npm run build && npm run compile && npm run compress && npm run list",
     "pkg": "npm run build && pkg -o dist/f11 -t $(bin/targets) .",
     "start": "nodemon src/index.ts",
+    "tinker": "nodemon src/tinker.ts",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
     "list": "[ -d dist ] && du -sh dist/*",
     "clean": "[ ! -d dist ] || rm dist/*",

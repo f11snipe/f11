@@ -1,6 +1,8 @@
 import 'colors';
 import fs from 'fs';
+import pem from 'pem';
 import path from 'path';
+import crypto from 'crypto';
 import { Socket } from 'net';
 import { Server, TLSSocket, TLSSocketOptions } from 'tls';
 import { WebSocketServer, WebSocket } from 'ws';
@@ -19,12 +21,16 @@ const DEFAULT_CLIENT_PORT = 2222;
 const DEFAULT_PROMPT = `sockz> `;
 
 const {
+  SERVER_PASSWORD = 'abc123',
   SERVER_HOST_NAME = 'localhost',
   SERVER_CERT_NAME = 'server.certificate.pem',
   SERVER_KEY_NAME = 'server.clientKey.pem',
   SERVER_CA_NAME = 'server.certificate.pem',
+  SERVER_CA_KEY_NAME = 'server.serviceKey.pem',
   STRIPE_SECRET_KEY
 } = process.env;
+
+const CERT_DIR = path.join(__dirname, '../../certs');
 
 export class F11Controller extends F11Base {
   public web: WebServer;
@@ -48,8 +54,100 @@ export class F11Controller extends F11Base {
      */
   }
 
+  public gen(force = false, cb: (err?: any) => void) {
+    const serverCertFile = path.join(CERT_DIR, SERVER_CERT_NAME);
+    const serverKeyFile = path.join(CERT_DIR, SERVER_KEY_NAME);
+    const serviceCertFile = path.join(CERT_DIR, SERVER_CA_NAME);
+    const serviceKeyFile = path.join(CERT_DIR, SERVER_CA_KEY_NAME);
+
+    const serverOptions: pem.CertificateCreationOptions = {
+      // csr: '',
+      // altNames: [],
+      days: 365,
+      hash: 'sha256',
+      selfSigned: true,
+      clientKeyPassword: SERVER_PASSWORD
+    };
+
+    if (force || !fs.existsSync(serverCertFile)) {
+      this.log.info(`Generating server certificates [${force ? 'forced' : 'first'}]`);
+
+      pem.createCertificate(serverOptions, (err, data) => {
+        this.log.info('Certs generated', data, err);
+
+        if (err) {
+          cb(err);
+        } else {
+          fs.writeFileSync(serverCertFile, data.certificate);
+          fs.writeFileSync(serverKeyFile, data.clientKey);
+          fs.writeFileSync(serviceCertFile, data.certificate);
+          fs.writeFileSync(serviceKeyFile, data.serviceKey);
+
+          cb();
+        }
+      });
+    } else {
+      cb();
+    }
+  }
+
+  public register(name: string, password?: string) {
+    if (!password) {
+      password = crypto.randomBytes(32).toString('hex');
+    }
+
+    // Generate certs...
+    const tlsOpts = this.tlsOptions(SERVER_CERT_NAME, SERVER_KEY_NAME, SERVER_CA_NAME);
+
+    this.log.info('Generating Client KeyPair ...', { name, password });
+
+    pem.createCertificate(
+      this.signedCertOptions(name, tlsOpts.key as string, tlsOpts.cert as string, SERVER_PASSWORD, password),
+      (err, keys) => {
+        if (err) throw err;
+
+        this.log.success('Client Keys Genereated:');
+        this.log.info(`${name} client key:\n${keys.clientKey}`);
+        this.log.info(`${name} client cert:\n${keys.certificate}`);
+      }
+    );
+  }
+
+  public signedCertOptions(
+    commonName: string,
+    serviceKey: string,
+    serviceCertificate: string,
+    serviceKeyPassword: string,
+    clientPassword: string
+  ): pem.CertificateCreationOptions {
+    return {
+      // csr: '',
+      // extFile: '/path/to/ext',
+      // config: '/path/to/config',
+      // csrConfigFile: '/path/to/csr/config',
+      // altNames: [],
+      // keyBitsize: 4096,
+      // hash: 'sha256',
+      // country: 'US',
+      // state: 'Colorado',
+      // locality: 'Denver',
+      // organization: 'F11',
+      // organizationUnit: 'Snipe',
+      // emailAddress: 'client@example.com',
+      commonName,
+      days: 1,
+      serial: 1234,
+      // serialFile: '/path/to/serial', // TODO: Submit PR for type fix?
+      selfSigned: false,
+      serviceKey,
+      serviceCertificate,
+      serviceKeyPassword,
+      clientKeyPassword: clientPassword
+    };
+  }
+
   public tlsOptions(cert: string, key: string, caList?: string, requestCert = true, rejectUnauthorized = true): TLSSocketOptions {
-    const certsDir = path.join(__dirname, '..', 'certs');
+    const certsDir = path.join(__dirname, '../../certs');
 
     return {
       key: fs.readFileSync(path.join(certsDir, key)),

@@ -62,14 +62,18 @@ export interface IF11Connectable extends IF11Base {
   commands: string[];
   forwards: string[];
   methods: string[];
+  events: string[];
   relay?: IF11Connectable;
   disconnecting?: boolean;
   requireAuthorized?: boolean;
   clientAuthorized?: boolean;
   client: IF11Connectable;
 
+  get peer(): string;
   get cert(): PeerCertificate | undefined;
   get isAuthorized(): boolean;
+
+  onData(data: any): void;
 
   authorized(): void;
   unauthorized(): void;

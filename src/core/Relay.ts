@@ -1,16 +1,31 @@
-import 'colors';
+import colors from 'colors/safe';
+import fs from 'fs';
+import os, { UserInfo } from 'os';
 import { Socket } from 'net';
+import { spawn, spawnSync, SpawnOptionsWithoutStdio, ChildProcessWithoutNullStreams } from 'child_process';
 import { TLSSocket, PeerCertificate } from 'tls';
 import { WebSocket } from 'ws';
 import { IF11Connectable } from './types';
 import { F11Base } from './Base';
 import { F11Controller } from './Controller';
 
+const SAVE_HINTS = {};
+const WEB_HOST = 'https://f11snipe.sh/sh';
+const UNIX_SHELLS = ['bash', 'sh'];
+const UNIX_DEFAULT = 'bin/sh';
+const TMP_DIR = `/tmp/.f11`;
+const CMD_PASS = ['ls', 'cat', 'pwd', 'whoami', 'cd', 'curl', 'wget'];
+
+
 export class F11Relay extends F11Base implements IF11Connectable {
+  public cp: ChildProcessWithoutNullStreams;
+  public inShell = false;
+  public inSpawn = false;
   public signature: string;
   public commands: string[] = ['reg', 'whoami', 'exit', 'ping', 'info', 'help'];
   public forwards: string[] = ['data', 'close', 'error'];
   public methods: string[] = ['data', 'close', 'error', 'authorized', 'unauthorized'];
+  public events: string[] = ['close', 'connect', 'data', 'drain', 'end', 'error', 'lookup', 'ready', 'timeout'];
   public client: IF11Connectable;
   public relay?: IF11Connectable;
   public disconnecting = false;
@@ -21,8 +36,35 @@ export class F11Relay extends F11Base implements IF11Connectable {
     super();
 
     this.signature = this.id;
+
+    if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
+
+    const events = ['close', 'connect', 'data', 'drain', 'end', 'error', 'lookup', 'ready', 'timeout'];
+
+    events.forEach((e, i) => {
+      this.socket.on(e, (...args) => {
+        this.log.debug(`[${i}] socket.on(${e}): ${JSON.stringify(args)}`);
+      });
+    })
+
+    this.socket.on('data', this.onData.bind(this));
+
     // this.client = this;
     // this.convert = new Convert();
+  }
+
+  public onData (data) {
+    // msg('debug', `SnipeSocket.onData: ${data}`);
+
+    // if (this.cp && this.inShell) {
+    //   this.command(data);
+    // } else {
+    //   this.handle(data);
+    // }
+  };
+
+  public get peer(): string {
+    return `${this.socket.remoteAddress}:${this.socket.remotePort}`;
   }
 
   public get cert(): PeerCertificate | undefined {
