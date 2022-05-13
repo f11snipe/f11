@@ -3,8 +3,8 @@ import fs from 'fs';
 import pem from 'pem';
 import path from 'path';
 import crypto from 'crypto';
-import { Socket } from 'net';
-import { Server, TLSSocket, TLSSocketOptions } from 'tls';
+import { Socket, Server } from 'net';
+import { Server as TLSServer, TLSSocket, TLSSocketOptions } from 'tls';
 import { WebSocketServer, WebSocket } from 'ws';
 import { IncomingMessage, ServerResponse as WebServerResponse } from 'http';
 import { Server as WebServer } from 'https';
@@ -16,6 +16,7 @@ import { F11Client } from './Client';
 
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_WEB_PORT = 4040;
+const DEFAULT_OPEN_PORT = 1337;
 const DEFAULT_AGENT_PORT = 1111;
 const DEFAULT_CLIENT_PORT = 2222;
 const DEFAULT_PROMPT = `F11> `;
@@ -36,14 +37,16 @@ const CERT_DIR = path.join(__dirname, '../../certs');
 export class F11Controller extends F11Base {
   public web: WebServer;
   public wss: WebSocketServer;
-  public agentServer: Server;
-  public clientServer: Server;
+  public openServer: Server;
+  public agentServer: TLSServer;
+  public clientServer: TLSServer;
 
   public agents: F11Agent[] = [];
   public clients: F11Client[] = [];
 
   constructor(
     public host = DEFAULT_HOST,
+    public openPort = DEFAULT_OPEN_PORT,
     public agentPort = DEFAULT_AGENT_PORT,
     public clientPort = DEFAULT_CLIENT_PORT,
     public prompt = DEFAULT_PROMPT
@@ -181,11 +184,16 @@ export class F11Controller extends F11Base {
   public init(): void {
     this.log.debug('F11Controller#init()');
 
-    this.agentServer = new Server(this.tlsOptions(SERVER_CERT_NAME, SERVER_KEY_NAME, SERVER_CA_NAME, true, false));
-    this.clientServer = new Server(this.tlsOptions(SERVER_CERT_NAME, SERVER_KEY_NAME, SERVER_CA_NAME, true, true));
+    this.openServer = new Server();
+    this.agentServer = new TLSServer(this.tlsOptions(SERVER_CERT_NAME, SERVER_KEY_NAME, SERVER_CA_NAME, true, false));
+    this.clientServer = new TLSServer(this.tlsOptions(SERVER_CERT_NAME, SERVER_KEY_NAME, SERVER_CA_NAME, true, true));
   }
 
   public listen(): void {
+    this.openServer.listen(this.openPort, this.host, () => {
+      this.log.info(`F11Open server listening: ${this.host}:${this.openPort}`);
+    });
+
     this.agentServer.listen(this.agentPort, this.host, () => {
       this.log.info(`F11Agent server listening: ${this.host}:${this.agentPort}`);
     });
@@ -196,6 +204,7 @@ export class F11Controller extends F11Base {
   }
 
   public handle(): void {
+    this.openServer.on('connection', this.connectAgent.bind(this));
     this.agentServer.on('secureConnection', this.connectAgent.bind(this));
     this.clientServer.on('secureConnection', this.connectClient.bind(this));
   }
@@ -204,7 +213,7 @@ export class F11Controller extends F11Base {
     this.log.debug(`${this.agents.length} F11Agent(s) | ${this.clients.length} F11Client(s)`);
   }
 
-  public connectAgent(socket: TLSSocket): void {
+  public connectAgent(socket: TLSSocket | Socket): void {
     const agent = new F11Agent(this, socket);
     agent.init();
     agent.send(STABALIZE);

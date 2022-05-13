@@ -3,7 +3,7 @@ import fs from 'fs';
 import tls, { TLSSocket } from 'tls';
 import path from 'path';
 // import shell from 'shelljs';
-// import { Socket } from 'net';
+import { Socket } from 'net';
 import { IF11Agent } from './types';
 import { F11Controller } from './Controller';
 import { F11Relay } from './Relay';
@@ -21,7 +21,7 @@ export class F11Agent extends F11Relay implements IF11Agent {
   public listener?: boolean;
   public requireAuthorized = false;
 
-  constructor(public ctl: F11Controller, public socket: TLSSocket) {
+  constructor(public ctl: F11Controller, public socket: TLSSocket | Socket) {
     super(ctl, socket);
   }
 

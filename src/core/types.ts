@@ -1,6 +1,7 @@
 import colors from 'colors/safe';
 import { UserInfo } from 'os';
 import { EventEmitter } from 'events';
+import { Socket } from 'net';
 import { TLSSocket, PeerCertificate } from 'tls';
 // import { WebSocket } from 'ws';
 import { F11Controller } from './Controller';
@@ -57,7 +58,7 @@ export interface IF11Module extends IF11Base {
 
 export interface IF11Connectable extends IF11Base {
   ctl: F11Controller;
-  socket: TLSSocket;
+  socket: TLSSocket | Socket;
   prompt?: string;
   signature?: string;
   commands: string[];

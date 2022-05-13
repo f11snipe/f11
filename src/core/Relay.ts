@@ -32,7 +32,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
   public requireAuthorized = false;
   public clientAuthorized = false;
 
-  constructor(public ctl: F11Controller, public socket: TLSSocket, public prompt?: string) {
+  constructor(public ctl: F11Controller, public socket: TLSSocket | Socket, public prompt?: string) {
     super();
 
     this.signature = this.id;
@@ -72,7 +72,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
   }
 
   public get isAuthorized(): boolean {
-    return !this.requireAuthorized || this.socket.authorized;
+    return !this.requireAuthorized || (this.socket instanceof TLSSocket && this.socket.authorized);
   }
 
   public authorized(): void {
@@ -151,9 +151,11 @@ export class F11Relay extends F11Base implements IF11Connectable {
   }
 
   public debug(): void {
-    const cert = this.socket.getPeerCertificate();
+    if (this.socket instanceof TLSSocket) {
+      const cert = this.socket.getPeerCertificate();
 
-    this.log.debug(`Cert info`, cert);
+      this.log.debug(`Cert info`, cert);
+    }
   }
 
   public ready(): void {
