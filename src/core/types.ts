@@ -1,3 +1,4 @@
+import colors from 'colors/safe';
 import { UserInfo } from 'os';
 import { EventEmitter } from 'events';
 import { TLSSocket, PeerCertificate } from 'tls';
@@ -67,7 +68,7 @@ export interface IF11Connectable extends IF11Base {
   disconnecting?: boolean;
   requireAuthorized?: boolean;
   clientAuthorized?: boolean;
-  client: IF11Connectable;
+  client?: IF11Connectable;
 
   get peer(): string;
   get cert(): PeerCertificate | undefined;
@@ -107,23 +108,39 @@ export interface IF11Agent {
   start(): void;
 }
 
-
+export type F11LogThemeColor = 'ok' | 'get' | 'run' | 'end' | 'good' | 'warn' | 'info' | 'debug' | 'details' | 'module' | 'fatal' | 'prompt' | 'pending';
 export type F11LogTextColor = 'black' | 'red' | 'green' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'white' | 'gray' | 'grey' | 'brightRed' | 'brightGreen' | 'brightYellow' | 'brightBlue' | 'brightMagenta' | 'brightCyan' | 'brightWhite';
 export type F11LogTextBgColor = 'bgBlack' | 'bgRed' | 'bgGreen' | 'bgYellow' | 'bgBlue' | 'bgMagenta' | 'bgCyan' | 'bgWhite' | 'bgGray' | 'bgGrey' | 'bgBrightRed' | 'bgBrightGreen' | 'bgBrightYellow' | 'bgBrightBlue' | 'bgBrightMagenta' | 'bgBrightCyan' | 'bgBrightWhite';
 export type F11LogTextStyle = 'reset' | 'bold' | 'dim' | 'italic' | 'underline' | 'inverse' | 'hidden' | 'strikethrough' | 'rainbow' | 'zebra' | 'america' | 'trap' | 'random';
-export type F11LogTextThemeValue = F11LogTextColor | F11LogTextBgColor | F11LogTextStyle;
+export type F11LogTextThemeValue = F11LogThemeColor | F11LogTextColor | F11LogTextBgColor | F11LogTextStyle;
 export type F11LogMethod = (...args: any[]) => void;
 
 export interface IF11LogTextTheme {
   [theme: string]: F11LogTextThemeValue | F11LogTextThemeValue[];
 }
 
+export const F11LogTheme: IF11LogTextTheme = {
+  ok: ['green'],
+  get: ['italic', 'green', 'underline'],
+  run: ['italic', 'yellow', 'underline'],
+  end: ['italic', 'red', 'bold', 'underline'],
+  good: ['green'],
+  warn: ['yellow'],
+  info: ['black', 'bgCyan'],
+  debug: ['dim', 'cyan', 'italic'],
+  details: ['dim', 'cyan', 'italic'],
+  module: ['red', 'bold', 'underline'],
+  fatal: ['white', 'bgRed', 'bold'],
+  prompt: ['trap', 'blue', 'bold'],
+  pending: ['trap', 'blue', 'bold', 'strikethrough']
+};
+
 export interface IF11LogOptions {
   timestamp?: boolean;
   throws?: boolean;
   prefix?: string;
   theme?: string;
-  color?: F11LogTextColor;
+  color?: F11LogTextThemeValue;
 }
 
 export interface IF11LogOptionsMap {
@@ -131,7 +148,7 @@ export interface IF11LogOptionsMap {
 }
 
 export interface IF11Logger {
-  colorize: (args: any, color: F11LogTextColor) => any;
+  colorize: (args: any, color: F11LogTextThemeValue | string) => any;
 
   timestamp: () => string;
 

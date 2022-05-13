@@ -22,11 +22,11 @@ export class F11Relay extends F11Base implements IF11Connectable {
   public inShell = false;
   public inSpawn = false;
   public signature: string;
-  public commands: string[] = ['reg', 'whoami', 'exit', 'ping', 'info', 'help'];
+  public commands: string[] = ['reg', 'whoami', 'exit', 'ping', 'help'];
   public forwards: string[] = ['data', 'close', 'error'];
   public methods: string[] = ['data', 'close', 'error', 'authorized', 'unauthorized'];
   public events: string[] = ['close', 'connect', 'data', 'drain', 'end', 'error', 'lookup', 'ready', 'timeout'];
-  public client: IF11Connectable;
+  public client?: IF11Connectable;
   public relay?: IF11Connectable;
   public disconnecting = false;
   public requireAuthorized = false;
@@ -47,7 +47,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
       });
     })
 
-    this.socket.on('data', this.onData.bind(this));
+    // this.socket.on('data', this.onData.bind(this));
 
     // this.client = this;
     // this.convert = new Convert();
@@ -171,8 +171,8 @@ export class F11Relay extends F11Base implements IF11Connectable {
     this.prompt = this.ctl.prompt;
 
     if (this.relay) {
-      this.log.debug(`Exit relay:`, this.relay.signature, this.relay.id);
-      this.relay.write('exit');
+      this.log.debug(`Reset relay:`, this.relay.signature, this.relay.id);
+      // this.relay.write('exit');
       delete this.relay;
     }
 
@@ -188,13 +188,9 @@ export class F11Relay extends F11Base implements IF11Connectable {
     if (this.relay) {
       if (cmd === 'exit') {
         this.reset();
-      } else if (cmd === 'chdir') {
-        this.relay.updatePrompt(this, args[0]);
-        this.relay.showPrompt();
       } else {
         this.log.debug(`Relay data: ${data}`, this.relay.signature, this.relay.id);
         this.relay.write(data);
-        this.relay.showPrompt();
       }
     } else {
       if (this.commands.includes(cmd)) {
@@ -220,7 +216,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
   }
 
   public whoami(): void {
-    this.send(this.client.signature || this.signature || 'Unknown');
+    this.send(this.client?.signature || this.signature || 'Unknown');
   }
 
   public ping(): void {
@@ -302,12 +298,15 @@ export class F11Relay extends F11Base implements IF11Connectable {
       const agent = this.ctl.agents[index];
       const msg = `Using [${index}]: ${agent.signature} | ${agent.id}`;
 
-      this.updatePrompt(agent);
+      // this.updatePrompt(agent);
 
       this.log.info(msg);
-      this.send(msg.bgGreen);
+      this.send(msg.bgGreen, false);
       this.relay = agent;
       agent.relay = this;
+      agent.client = this;
+      this.data(`\n`);
+      // agent.send(`\r\n`);
     } else {
       this.send(`Missing/invalid agent target: ${target}`);
     }

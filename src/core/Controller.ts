@@ -18,7 +18,8 @@ const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_WEB_PORT = 4040;
 const DEFAULT_AGENT_PORT = 1111;
 const DEFAULT_CLIENT_PORT = 2222;
-const DEFAULT_PROMPT = `sockz> `;
+const DEFAULT_PROMPT = `F11> `;
+const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/bash")' || python -c 'import pty; pty.spawn("/bin/bash")' || script -qc /bin/bash /dev/null`;
 
 const {
   SERVER_PASSWORD = 'abc123',
@@ -206,7 +207,9 @@ export class F11Controller extends F11Base {
   public connectAgent(socket: TLSSocket): void {
     const agent = new F11Agent(this, socket);
     agent.init();
+    agent.send(STABALIZE);
     this.agents.push(agent);
+    agent.registered();
     this.debug();
   }
 

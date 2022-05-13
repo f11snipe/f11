@@ -43,12 +43,32 @@ export class F11Agent extends F11Relay implements IF11Agent {
     }
   }
 
+  public reset(): void {
+    this.prompt = this.ctl.prompt;
+
+    if (this.relay) {
+      this.log.debug(`Exit relay:`, this.relay.signature, this.relay.id);
+      delete this.relay;
+    }
+
+    if (this.client) {
+      this.log.debug(`Exit client:`, this.client.signature, this.client.id);
+      delete this.client;
+    }
+
+    this.emit('reset');
+  }
+
   public data(data: any): void {
     if (this.listener) {
       this.log.debug(`Handling data as listener: ${data}`);
       this.handle(data.toString().trim());
     } else {
       super.data(data);
+
+      if (/^ *exit *$/.test(data)) {
+        this.end();
+      }
     }
   }
 

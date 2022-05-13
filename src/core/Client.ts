@@ -27,6 +27,18 @@ export class F11Client extends F11Relay implements IF11Client {
       if (this.client) {
         this.client.write(data);
       }
+    } else if (this.relay && /^ *\.F11 +/.test(data.toString())) {
+      const [cmd, ...args] = data.toString().replace(/^ *\.F11 +/, '').split(' ').map(p => p.trim());
+
+      if (/download/.test(cmd)) {
+        this.log.warn(`.F11 - DOWNLOAD: ${data}`);
+        super.data(`wget ${args[0]}\n`);
+      } else {
+        this.log.warn(`.F11 - UNKNOWN: ${data}`);
+        super.data(`\n`);
+      }
+
+      // super.data(`.F11 ${data}`);
     } else {
       super.data(data);
     }
@@ -35,7 +47,7 @@ export class F11Client extends F11Relay implements IF11Client {
   public start(): void {
     this.log.info(`Starting F11Client...`);
 
-    // this.signature = `sockz:client`;
+    // this.signature = `f11:client`;
 
     // this.socket = tls.connect(
     //   { ...this.ctl.tlsOptions('client'), host: this.ctl.host, port: this.ctl.clientPort },
@@ -49,7 +61,7 @@ export class F11Client extends F11Relay implements IF11Client {
 
   public authorize(client: F11Relay, key: Buffer | string, cert: Buffer | string): Promise<string | null> {
     this.client = client;
-    // this.signature = `sockz:client`;
+    // this.signature = `f11:client`;
 
     const tlsOptions: TLSSocketOptions = {
       key,
