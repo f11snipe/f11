@@ -20,6 +20,7 @@
     "pkg": "npm run build && pkg -o dist/f11 -t $(bin/targets) .",
     "start": "nodemon src/index.ts",
     "tinker": "nodemon src/tinker.ts",
+    "watch": "nodemon src/watch.ts",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
     "list": "[ -d dist ] && du -sh dist/*",
     "clean": "[ ! -d dist ] || rm dist/*",
