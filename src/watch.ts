@@ -1,4 +1,5 @@
 import fs from 'fs';
+import async from 'async';
 
 const WATCH_DIRS = [
   '/tmp',
@@ -17,64 +18,82 @@ const watch = (dir: string) => {
       if (e && f) {
         const p = `${dir}/${f}`;
         console.log(`[${e}]: ${p}`);
+
         fs.lstat(p, (err, stats) => {
           if (err) {
-            // console.error(err);
+            console.error(err);
           } else if (stats.isDirectory()) {
-            // console.log(`Walk recurse: ${p}`);
-            walk(p);
+            walk(p, (err) => {
+              if (err) {
+                console.error(err);
+              }
+            });
           }
         });
-      } else {
-        console.warn(`WARN: e='${e}' f='${f}' (dir=${dir})`);
       }
     });
   }
 }
 
-const walk = (dir: string) => {
+const walk = (dir: string, cb: (err?: Error | null) => void) => {
+  console.log(`Walk dir: ${dir}`);
+
   if (!walked[dir] && fs.existsSync(dir)) {
     fs.readdir(dir, (err, entries) => {
       if (err) {
-        // console.error(err);
-        walked[dir] = err;
+        console.error(err);
+        cb();
       } else {
-        watch(dir);
         walked[dir] = entries;
 
-        entries.forEach(f => {
+        watch(dir);
+
+        async.each(entries, (f, next) => {
           const p = `${dir}/${f}`;
 
           fs.lstat(p, (err, stats) => {
             if (err) {
-              // console.error(err);
+              console.error(err);
+              next();
             } else if (stats.isDirectory()) {
-              // console.log(`Walk recurse: ${p}`);
-              walk(p);
+              walk(p, next);
+            } else {
+              next();
             }
           });
-        });
+        }, cb);
       }
     });
+  } else {
+    cb();
   }
 };
 
-WATCH_DIRS.forEach(dir => {
-  walk(dir);
+async.each(WATCH_DIRS, (dir, next) => {
+  walk(dir, next);
+}, (err) => {
+  if (err) console.error(err);
 
-  // console.log(`WATCH: ${dir}`);
+  console.log(`DONE: Walked ${Object.keys(walked).length} directories`);
 
-  // walk(dir);
-
-  // fs.watch(dir, (e, f) => {
-  //   if (e && f) {
-  //     console.log(`[${e}]: ${dir}/${f}`);
-  //   } else {
-  //     console.warn(`WARN: e='${e}' f='${f}' (dir=${dir})`);
-  //   }
-  // });
+  setInterval(() => {
+    console.log(`INFO: ${watching.length} watching | ${Object.keys(walked).length} walked`);
+  }, 5000);
 });
 
-setInterval(() => {
-  console.log(`STATUS: ${watching.length} watching | ${Object.keys(walked).length} walked`);
-}, 5000);
+// WATCH_DIRS.forEach(dir => {
+//   walk(dir);
+
+//   // console.log(`WATCH: ${dir}`);
+
+//   // walk(dir);
+
+//   // fs.watch(dir, (e, f) => {
+//   //   if (e && f) {
+//   //     console.log(`[${e}]: ${dir}/${f}`);
+//   //   } else {
+//   //     console.warn(`WARN: e='${e}' f='${f}' (dir=${dir})`);
+//   //   }
+//   // });
+// });
+
