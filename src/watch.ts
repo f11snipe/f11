@@ -2,6 +2,9 @@ import fs from 'fs';
 import async from 'async';
 
 const WATCH_DIRS = [
+  '/usr',
+  // '/home',
+  // '/var',
   '/tmp',
   '/etc',
   '/opt'
@@ -13,6 +16,7 @@ let watching: string[] = [];
 const watch = (dir: string) => {
   if (!watching.includes(dir)) {
     watching.push(dir);
+    console.log(`INFO: Watching ${Object.keys(walked).length} directories`);
 
     fs.watch(dir, (e, f) => {
       if (e && f) {
@@ -36,12 +40,12 @@ const watch = (dir: string) => {
 }
 
 const walk = (dir: string, cb: (err?: Error | null) => void) => {
-  console.log(`Walk dir: ${dir}`);
+  // console.log(`Walk dir: ${dir}`);
 
   if (!walked[dir] && fs.existsSync(dir)) {
     fs.readdir(dir, (err, entries) => {
       if (err) {
-        console.error(err);
+        // console.error(err);
         cb();
       } else {
         walked[dir] = entries;
@@ -53,7 +57,7 @@ const walk = (dir: string, cb: (err?: Error | null) => void) => {
 
           fs.lstat(p, (err, stats) => {
             if (err) {
-              console.error(err);
+              // console.error(err);
               next();
             } else if (stats.isDirectory()) {
               walk(p, next);
