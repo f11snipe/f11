@@ -7,6 +7,6 @@ ctl.gen(false, (err) => {
     ctl.log.error(err);
   } else {
     ctl.startServer();
-    ctl.register('Example');
+    ctl.register('F11snipe');
   }
 });
