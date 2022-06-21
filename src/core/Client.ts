@@ -5,6 +5,8 @@ import { IF11Client } from './types';
 import { F11Controller } from './Controller';
 import { F11Relay } from './Relay';
 
+const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/bash")' || python -c 'import pty; pty.spawn("/bin/bash")' || script -qc /bin/bash /dev/null`;
+
 export class F11Client extends F11Relay implements IF11Client {
   public requireAuthorized = true;
 
@@ -40,6 +42,26 @@ export class F11Client extends F11Relay implements IF11Client {
 
       // super.data(`.F11 ${data}`);
     } else {
+      const body = data.toString().trim();
+      const lines = body.split(`\n`);
+
+      lines.forEach(line => {
+        if (/^#f11\|/i.test(line)) {
+          const info: { user?: string, path?: string, host?: string } = {};
+          const [_, action, content] = line.split('|');
+          content.split(';').forEach(chunk => {
+            const [key, val] = chunk.split(':');
+            info[key] = val;
+          });
+
+          if (/^sig/i.test(action)) {
+            this.signature = `${info.user}@${info.host}:${info.path}`;
+          } else if (/^stable|stabalize$/i.test(action)) {
+            this.relay?.send(STABALIZE);
+          }
+        }
+      });
+
       super.data(data);
     }
   }

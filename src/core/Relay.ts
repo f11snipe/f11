@@ -21,6 +21,9 @@ export class F11Relay extends F11Base implements IF11Connectable {
   public cp: ChildProcessWithoutNullStreams;
   public inShell = false;
   public inSpawn = false;
+  public address: string;
+  public addrLocal: string;
+  public addrRemote: string;
   public signature: string;
   public commands: string[] = ['reg', 'whoami', 'exit', 'ping', 'help'];
   public forwards: string[] = ['data', 'close', 'error'];
@@ -36,6 +39,9 @@ export class F11Relay extends F11Base implements IF11Connectable {
     super();
 
     this.signature = this.id;
+    this.addrLocal = `${socket.localAddress}:${socket.localPort}`;
+    this.addrRemote = `${socket.remoteAddress}:${socket.remotePort}`;
+    this.address = `L:${this.addrLocal} <> R:${this.addrRemote}`;
 
     if (!fs.existsSync(TMP_DIR)) fs.mkdirSync(TMP_DIR, { recursive: true });
 
@@ -281,7 +287,10 @@ export class F11Relay extends F11Base implements IF11Connectable {
 
     if (agents.length) {
       this.ctl.agents.forEach((agent, index) => {
-        lines.push(`\t[${index}]`.yellow + ' ' + agent.signature?.cyan + ` | ` + agent.id.blue.italic);
+        // const cols = [ agent.signature?.cyan, `${agent.addrLocal.green} - ${agent.addrRemote.blue}`, agent.id.gray ];
+        const cols = [ agent.addrLocal.green, agent.addrRemote.blue, agent.signature?.cyan];
+        // const cols = [ agent.signature?.cyan, agent.addrRemote.blue, agent.id.gray ];
+        lines.push(`\t[${index}]`.yellow + ' ' + cols.map(c => c.padEnd(28, ' ')).join(' | '));
       });
 
       lines.push('');
@@ -303,7 +312,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
       // this.updatePrompt(agent);
 
       this.log.info(msg);
-      this.send(msg.bgGreen, false);
+      this.send(msg.bgGreen + `\n\n`, false);
       this.relay = agent;
       agent.relay = this;
       agent.client = this;

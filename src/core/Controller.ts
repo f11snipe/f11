@@ -40,12 +40,14 @@ export class F11Controller extends F11Base {
   public openServer: Server;
   public agentServer: TLSServer;
   public clientServer: TLSServer;
+  public extraServers: Server[] = [];
 
   public agents: F11Agent[] = [];
   public clients: F11Client[] = [];
 
   constructor(
     public host = DEFAULT_HOST,
+    public extraPorts: number[] = [],
     public openPort = DEFAULT_OPEN_PORT,
     public agentPort = DEFAULT_AGENT_PORT,
     public clientPort = DEFAULT_CLIENT_PORT,
@@ -201,12 +203,24 @@ export class F11Controller extends F11Base {
     this.clientServer.listen(this.clientPort, this.host, () => {
       this.log.info(`F11Client server listening: ${this.host}:${this.clientPort}`);
     });
+
+    this.extraPorts.forEach(port => {
+      this.log.debug(`Building openServer for extra port: ${port}`);
+      const exSrv = new Server();
+      this.extraServers.push(exSrv);
+      exSrv.listen(port, this.host, () => {
+        this.log.info(`F11Extra server listening: ${this.host}:${port}`);
+      });
+    });
   }
 
   public handle(): void {
     this.openServer.on('connection', this.connectAgent.bind(this));
     this.agentServer.on('secureConnection', this.connectAgent.bind(this));
     this.clientServer.on('secureConnection', this.connectClient.bind(this));
+    this.extraServers.forEach(exSrv => {
+      exSrv.on('connection', this.connectAgent.bind(this));
+    });
   }
 
   public debug(): void {
@@ -216,9 +230,9 @@ export class F11Controller extends F11Base {
   public connectAgent(socket: TLSSocket | Socket): void {
     const agent = new F11Agent(this, socket);
     agent.init();
-    agent.send(STABALIZE);
+    // agent.send(STABALIZE);
     this.agents.push(agent);
-    agent.registered();
+    // agent.registered();
     this.debug();
   }
 

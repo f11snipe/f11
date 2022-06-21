@@ -1,6 +1,6 @@
 import { F11Controller } from './core/Controller';
 
-const ctl = new F11Controller('0.0.0.0');
+const ctl = new F11Controller('0.0.0.0', [4444, 6969, 9999]);
 
 ctl.gen(false, (err) => {
   if (err) {

