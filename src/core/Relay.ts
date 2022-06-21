@@ -204,7 +204,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
       if (this.commands.includes(cmd)) {
         this.log.debug(`Running cmd: ${data}`);
         this.emit(cmd, ...args);
-      } else {
+      } else if (cmd.trim() !== '') {
         this.log.warn(`Unknown cmd: ${cmd}`);
         this.send(`Unknown cmd: ${cmd} (available: ${this.commands.join(', ')})`);
       }
@@ -290,7 +290,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
         // const cols = [ agent.signature?.cyan, `${agent.addrLocal.green} - ${agent.addrRemote.blue}`, agent.id.gray ];
         const cols = [ agent.addrLocal.green, agent.addrRemote.blue, agent.signature?.cyan];
         // const cols = [ agent.signature?.cyan, agent.addrRemote.blue, agent.id.gray ];
-        lines.push(`\t[${index}]`.yellow + ' ' + cols.map(c => c.padEnd(28, ' ')).join(' | '));
+        lines.push(`\t[${index}]`.yellow + ' ' + cols.map(c => c.padEnd(28, ' ').padStart(30, ' ')).join(' | '));
       });
 
       lines.push('');
@@ -300,6 +300,22 @@ export class F11Relay extends F11Base implements IF11Connectable {
     }
 
     this.send(lines.join(`\n`));
+  }
+
+  public kill(target: string) {
+    const index = Number(target);
+
+    if (!isNaN(index) && index >= 0 && index < this.ctl.agents.length) {
+      const agent = this.ctl.agents[index];
+      const msg = `Killing [${index}]: ${agent.signature} | ${agent.id}`;
+
+      this.log.info(msg);
+      this.send(msg.bgRed + `\n`, false);
+      agent.exit();
+      this.send(`Killed: [${index}] ${agent.id} (${agent.signature} | ${agent.address})`.gray);
+    } else {
+      this.send(`Missing/invalid agent target: ${target}`);
+    }
   }
 
   public use(target: string) {
