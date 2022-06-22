@@ -2,7 +2,7 @@ import fs from 'fs';
 import async from 'async';
 
 const WATCH_DIRS = [
-  '/usr',
+  // '/usr',
   // '/home',
   // '/var',
   '/tmp',

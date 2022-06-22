@@ -6,6 +6,7 @@ import { F11Controller } from './Controller';
 import { F11Relay } from './Relay';
 
 const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/bash")' || python -c 'import pty; pty.spawn("/bin/bash")' || script -qc /bin/bash /dev/null`;
+// const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/snipe")' || python -c 'import pty; pty.spawn("/bin/snipe")' || script -qc /bin/snipe /dev/null`;
 
 export class F11Client extends F11Relay implements IF11Client {
   public requireAuthorized = true;
