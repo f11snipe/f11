@@ -2,12 +2,22 @@ import fs from 'fs';
 import async from 'async';
 
 const WATCH_DIRS = [
-  // '/usr',
-  // '/home',
-  // '/var',
+  '/usr',
+  '/home',
   '/tmp',
   '/etc',
-  '/opt'
+  '/opt',
+  // Not skipping /var/log? ... need explicit blacklist/skiplist?
+  '/var/backups',
+  '/var/cache',
+  '/var/crash',
+  '/var/local',
+  '/var/ftp',
+  '/var/opt',
+  '/var/mail',
+  '/var/spool',
+  '/var/tmp',
+  '/var/www'
 ];
 
 let walked: { [dir: string]: Error | string[] } = {};
@@ -25,7 +35,8 @@ const watch = (dir: string) => {
 
         fs.lstat(p, (err, stats) => {
           if (err) {
-            console.error(err);
+            // TODO: Better reporting on errors here? when tmp files create/deleted quickly
+            // console.error(err);
           } else if (stats.isDirectory()) {
             walk(p, (err) => {
               if (err) {

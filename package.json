@@ -25,7 +25,7 @@
     "scan": "ts-node src/scan.ts",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
     "list": "[ -d dist ] && du -sh dist/*",
-    "clean": "[ ! -d dist ] || rm dist/*",
+    "clean": "[ ! -d dist ] || rm -rf dist/*",
     "compile": "npm run clean && npm run pkg",
     "compress": "for i in dist/f11-*; do echo \"Compress: ${i}\" && xz -k -z -9 $i; done"
   },
