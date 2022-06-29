@@ -7,6 +7,7 @@ import { Socket } from 'net';
 import { IF11Agent } from './types';
 import { F11Controller } from './Controller';
 import { F11Relay } from './Relay';
+import { F11Host } from './Host';
 
 const {
   AGENT_CERT_NAME = 'agent.certificate.pem',
@@ -20,12 +21,17 @@ const {
 const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/bash")' || python -c 'import pty; pty.spawn("/bin/bash")' || script -qc /bin/bash /dev/null`;
 
 export class F11Agent extends F11Relay implements IF11Agent {
+  public host: F11Host;
   public listener?: boolean;
   public active = false;
   public requireAuthorized = false;
 
   constructor(public ctl: F11Controller, public socket: TLSSocket | Socket) {
     super(ctl, socket);
+
+    if (socket.remoteAddress) {
+      this.host = ctl.findOrCreateHost(socket.remoteAddress);
+    }
   }
 
   get docPath(): string {
@@ -74,6 +80,10 @@ export class F11Agent extends F11Relay implements IF11Agent {
           const [key, val] = chunk.split(':');
           info[key] = val;
         });
+
+        if (info.host) {
+          this.host.hostname = info.host;
+        }
 
         if (/^sig/i.test(action)) {
           this.signature = `${info.user}@${info.host}:${info.path}`;

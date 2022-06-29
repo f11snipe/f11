@@ -109,6 +109,18 @@ export interface IF11Agent {
   start(): void;
 }
 
+export interface IF11Host {
+  ctl: F11Controller;
+  address: string;
+
+  get agents(): IF11Agent[];
+  get clients(): IF11Client[];
+
+  send(action: string): void;
+  sendOne(action: string): void;
+  sendAll(action: string): void;
+}
+
 export type F11LogThemeColor = 'ok' | 'get' | 'run' | 'end' | 'good' | 'warn' | 'info' | 'debug' | 'details' | 'module' | 'fatal' | 'prompt' | 'pending';
 export type F11LogTextColor = 'black' | 'red' | 'green' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'white' | 'gray' | 'grey' | 'brightRed' | 'brightGreen' | 'brightYellow' | 'brightBlue' | 'brightMagenta' | 'brightCyan' | 'brightWhite';
 export type F11LogTextBgColor = 'bgBlack' | 'bgRed' | 'bgGreen' | 'bgYellow' | 'bgBlue' | 'bgMagenta' | 'bgCyan' | 'bgWhite' | 'bgGray' | 'bgGrey' | 'bgBrightRed' | 'bgBrightGreen' | 'bgBrightYellow' | 'bgBrightBlue' | 'bgBrightMagenta' | 'bgBrightCyan' | 'bgBrightWhite';

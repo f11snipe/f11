@@ -13,6 +13,7 @@ import { F11Base } from './Base';
 import { F11Relay } from './Relay';
 import { F11Agent } from './Agent';
 import { F11Client } from './Client';
+import { F11Host } from './Host';
 
 const DEFAULT_HOST = '127.0.0.1';
 const DEFAULT_WEB_PORT = 4040;
@@ -42,6 +43,7 @@ export class F11Controller extends F11Base {
   public clientServer: TLSServer;
   public extraServers: Server[] = [];
 
+  public hosts: F11Host[] = [];
   public agents: F11Agent[] = [];
   public clients: F11Client[] = [];
 
@@ -225,6 +227,21 @@ export class F11Controller extends F11Base {
 
   public debug(): void {
     this.log.debug(`${this.agents.length} F11Agent(s) | ${this.clients.length} F11Client(s)`);
+  }
+
+  public findHost(ip: string) {
+    return this.hosts.find(host => host.address === ip);
+  }
+
+  public findOrCreateHost(ip: string) {
+    let host = this.findHost(ip);
+
+    if (!host) {
+      host = new F11Host(this, ip, '---');
+      this.hosts.push(host);
+    }
+
+    return host;
   }
 
   public connectAgent(socket: TLSSocket | Socket): void {

@@ -20,7 +20,7 @@
     "pkg": "npm run build && pkg -o dist/f11 -t $(bin/targets) .",
     "start": "nodemon src/index.ts",
     "tinker": "nodemon src/tinker.ts",
-    "koth": "ts-node src/koth.ts",
+    "koth": "nodemon src/koth.ts",
     "watch": "nodemon src/watch.ts",
     "scan": "ts-node src/scan.ts",
     "build": "tsc && terser dist/index.js > dist/index.min.js",

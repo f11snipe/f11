@@ -20,7 +20,7 @@ export class F11Client extends F11Relay implements IF11Client {
   }
 
   public init(): void {
-    super.init(['ls', 'use', 'kill']);
+    super.init(['hosts', 'shoot', 'spray', 'ls', 'use', 'kill']);
     this.on('reset', this.showPrompt.bind(this));
   }
 
