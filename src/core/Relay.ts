@@ -288,16 +288,27 @@ export class F11Relay extends F11Base implements IF11Connectable {
     if (hosts.length) {
       if (args.length > 1) {
         const [ index, ...rest ] = args;
-        const action = rest.join(' ');
+        let action = rest.join(' ');
 
         if (hosts[index] && typeof hosts[index][method] === 'function') {
-          hosts[index][method](action);
-          this.send(`Host ${method} [${index}]: '${action}'`);
+          if (/In$/.test(method)) {
+            const delay = rest.shift();
+            if (delay && /[0-9]+/.test(delay)) {
+              action = rest.join(' ');
+              hosts[index][method](delay, action);
+              this.send(`Host ${method} [${index}]: '${action}'`);
+            } else {
+              this.send(`Missing/invalid delay: ${delay}`.yellow);
+            }
+          } else {
+            hosts[index][method](action);
+            this.send(`Host ${method} [${index}]: '${action}'`);
+          }
         } else {
           this.send(`Missing/invalid host index: ${index}`.yellow);
         }
       } else {
-        this.send(`Usage: shoot [index] [...action]`.yellow);
+        this.send(`Usage: [shoot|spray](in) [index] (delay) [...action]`.yellow);
       }
     } else {
       this.send(`No hosts to shoot!`.yellow);
@@ -310,6 +321,14 @@ export class F11Relay extends F11Base implements IF11Connectable {
 
   public spray(...args: string[]) {
     this.onHost('sendAll', ...args);
+  }
+
+  public shootin(...args: string[]) {
+    this.onHost('sendAnyIn', ...args);
+  }
+
+  public sprayin(...args: string[]) {
+    this.onHost('sendAllIn', ...args);
   }
 
   public hosts(...args: string[]) {

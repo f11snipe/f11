@@ -39,4 +39,16 @@ export class F11Host extends F11Base implements F11Host {
       if (cb) cb(err);
     });
   }
+
+  public sendAnyIn(timeout: number, action: string, cb?: (err?: Error | null) => void): void {
+    setTimeout(() => {
+      this.sendAny(action, cb);
+    }, timeout);
+  }
+
+  public sendAllIn(timeout: number, action: string, cb?: (err?: Error | null) => void): void {
+    setTimeout(() => {
+      this.sendAll(action, cb);
+    }, timeout);
+  }
 }
