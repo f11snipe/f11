@@ -45,25 +45,28 @@ export class F11Client extends F11Relay implements IF11Client {
     } else {
       const body = data.toString().trim();
       const lines = body.split(`\n`);
+      let skip = false;
 
       lines.forEach(line => {
-        if (/^#f11\|/i.test(line)) {
+        if (/^ *(stable|stabalise|stabalize) *$/i.test(line)) {
+          this.relay?.write(STABALIZE + `\n`);
+          skip = true;
+        } else if (/^#f11\|/i.test(line)) {
           const info: { user?: string, path?: string, host?: string } = {};
           const [_, action, content] = line.split('|');
-          content.split(';').forEach(chunk => {
-            const [key, val] = chunk.split(':');
-            info[key] = val;
-          });
-
-          if (/^sig/i.test(action)) {
-            this.signature = `${info.user}@${info.host}:${info.path}`;
-          } else if (/^stable|stabalize$/i.test(action)) {
-            this.relay?.send(STABALIZE);
+          if (content) {
+            content.split(';').forEach(chunk => {
+              const [key, val] = chunk.split(':');
+              info[key] = val;
+            });
+            if (/^sig/i.test(action)) {
+              this.signature = `${info.user}@${info.host}:${info.path}`;
+            }
           }
         }
       });
 
-      super.data(data);
+      if (!skip) super.data(data);
     }
   }
 

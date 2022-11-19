@@ -117,7 +117,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
   }
 
   public send(msg: string, keep = true): void {
-    this.log.debug(`Sending: ${msg}`, { keep });
+    this.log.debug(`Sending: ${msg}`, { keep }, this.prompt);
 
     if (this.prompt) {
       this.write(msg);
@@ -286,22 +286,25 @@ export class F11Relay extends F11Base implements IF11Connectable {
     this.log.info(`Running host method: '${method}'`, args);
 
     if (hosts.length) {
+
       if (args.length > 1) {
         const [ index, ...rest ] = args;
         let action = rest.join(' ');
+        const findHost = (key) => hosts.find(h => h[key] === index);
+        const host = hosts[index] || findHost('id') || findHost('address') || findHost('hostname');
 
-        if (hosts[index] && typeof hosts[index][method] === 'function') {
+        if (host && typeof host[method] === 'function') {
           if (/In$/.test(method)) {
             const delay = rest.shift();
             if (delay && /[0-9]+/.test(delay)) {
               action = rest.join(' ');
-              hosts[index][method](delay, action);
+              host[method](delay, action);
               this.send(`Host ${method} [${index}]: '${action}'`);
             } else {
               this.send(`Missing/invalid delay: ${delay}`.yellow);
             }
           } else {
-            hosts[index][method](action);
+            host[method](action);
             this.send(`Host ${method} [${index}]: '${action}'`);
           }
         } else {
@@ -339,7 +342,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
 
     if (hosts.length) {
       this.ctl.hosts.forEach((host, index) => {
-        const cols = [ host.address.green, host.hostname.blue, `${host.agents.length} agent(s)`.cyan ];
+        const cols = [ host.id.gray, host.address.green, host.hostname.blue, `${host.agents.length} agent(s)`.cyan ];
         lines.push(`\t[${index}]`.yellow + ' ' + cols.map(c => c.padEnd(28, ' ').padStart(30, ' ')).join(' | '));
       });
 
@@ -361,7 +364,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
     if (agents.length) {
       this.ctl.agents.forEach((agent, index) => {
         // const cols = [ agent.signature?.cyan, `${agent.addrLocal.green} - ${agent.addrRemote.blue}`, agent.id.gray ];
-        const cols = [ agent.addrLocal.green, agent.addrRemote.blue, agent.signature?.cyan];
+        const cols = [ agent.id.gray, agent.addrLocal.green, agent.addrRemote.blue, agent.signature?.cyan ];
         // const cols = [ agent.signature?.cyan, agent.addrRemote.blue, agent.id.gray ];
         lines.push(`\t[${index}]`.yellow + ' ' + cols.map(c => c.padEnd(28, ' ').padStart(30, ' ')).join(' | '));
       });

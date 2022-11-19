@@ -40,6 +40,8 @@ export class F11Agent extends F11Relay implements IF11Agent {
 
   public init(): void {
     super.init(['registered']);
+
+    this.write(`echo "#f11|sig|pid:$$;user:$(whoami);path:$(pwd);host:$(hostname)"\n`);
   }
 
   public registered(): void {
@@ -116,7 +118,7 @@ export class F11Agent extends F11Relay implements IF11Agent {
   }
 
   public stable(cmd?: string): void {
-    this.send(cmd || STABALIZE);
+    this.write((cmd || STABALIZE) + `\n`);
   }
 
   public handle(action: string): void {
