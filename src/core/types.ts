@@ -95,6 +95,7 @@ export interface IF11Connectable extends IF11Base {
   disconnect(): void;
   showPrompt(): void;
   updatePrompt(relay: IF11Connectable, cwd?: string): void;
+  updateSig(src?: string): void;
 }
 
 export interface IF11Client {

@@ -4,6 +4,7 @@ import tls, { PeerCertificate, TLSSocket, TLSSocketOptions } from 'tls';
 import { IF11Client } from './types';
 import { F11Controller } from './Controller';
 import { F11Relay } from './Relay';
+import { F11Agent } from './Agent';
 
 const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/bash")' || python -c 'import pty; pty.spawn("/bin/bash")' || script -qc /bin/bash /dev/null`;
 // const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/snipe")' || python -c 'import pty; pty.spawn("/bin/snipe")' || script -qc /bin/snipe /dev/null`;
@@ -48,25 +49,20 @@ export class F11Client extends F11Relay implements IF11Client {
       let skip = false;
 
       lines.forEach(line => {
+        if (!this.relay) return;
+        const agent = this.relay as F11Agent;
+
         if (/^ *(stable|stabalise|stabalize) *$/i.test(line)) {
-          this.relay?.write(STABALIZE + `\n`);
+          agent.stable();
           skip = true;
-        } else if (/^#f11\|/i.test(line)) {
-          const info: { user?: string, path?: string, host?: string } = {};
-          const [_, action, content] = line.split('|');
-          if (content) {
-            content.split(';').forEach(chunk => {
-              const [key, val] = chunk.split(':');
-              info[key] = val;
-            });
-            if (/^sig/i.test(action)) {
-              this.signature = `${info.user}@${info.host}:${info.path}`;
-            }
-          }
         }
       });
 
       if (!skip) super.data(data);
+
+      if (this.relay && this.relay instanceof F11Agent) {
+        this.relay.updateSig('Client.data()' + (skip ? 'SKIP' : 'SUPER DATA'));
+      }
     }
   }
 

@@ -180,6 +180,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
 
     if (this.relay) {
       this.log.debug(`Reset relay:`, this.relay.signature, this.relay.id);
+      this.relay.updateSig('Agent.reset()');
       // this.relay.write('exit');
       delete this.relay;
     }
@@ -209,6 +210,10 @@ export class F11Relay extends F11Base implements IF11Connectable {
         this.send(`Unknown cmd: ${cmd} (available: ${this.commands.join(', ')})`);
       }
     }
+  }
+
+  public updateSig(src = 'none'): void {
+    // Override in subclasses to customize signature
   }
 
   public reg(sig: string): void {
