@@ -4,7 +4,7 @@ import tls, { TLSSocket } from 'tls';
 import path from 'path';
 // import shell from 'shelljs';
 import { Socket } from 'net';
-import { IF11Agent } from './types';
+import { IF11Agent, IF11Cmd, IF11AgentCmd, IF11HostCmd, F11CmdTarget } from './types';
 import { F11Controller } from './Controller';
 import { F11Relay } from './Relay';
 import { F11Host } from './Host';
@@ -76,19 +76,45 @@ export class F11Agent extends F11Relay implements IF11Agent {
 
     lines.forEach(line => {
       if (/^#f11\|/i.test(line)) {
-        const info: { user?: string, path?: string, host?: string } = {};
-        const [_, action, content] = line.split('|');
-        content.split(';').forEach(chunk => {
-          const [key, val] = chunk.split(':');
-          info[key] = val;
-        });
+        const [_, target, action, content] = line.split('|').map(s => s.trim());
 
-        if (info.host) {
-          this.host.hostname = info.host;
-        }
+        const payload: IF11Cmd = {
+          target,
+          action,
+          data: JSON.parse(Buffer.from(content, 'base64').toString())
+        };
 
-        if (/^sig/i.test(action)) {
-          this.signature = `${info.user}@${info.host}:${info.path}`;
+        switch (target as F11CmdTarget) {
+          case 'agent':
+            const agentCmd = payload as IF11AgentCmd;
+            switch (agentCmd.action) {
+              case 'sig':
+                this.signature = `${agentCmd.data.user}@${agentCmd.data.host}:${agentCmd.data.path}`;
+                if (agentCmd.data.host) {
+                  this.host.hostname = agentCmd.data.host;
+                }
+                break;
+              case 'path':
+                break;
+              case 'user':
+                break;
+              default:
+                break;
+            }
+            break;
+          case 'host':
+            const hostCmd = payload as IF11HostCmd;
+            switch (hostCmd.action) {
+              case 'file':
+                break;
+              case 'proc':
+                break;
+              default:
+                break;
+            }
+            break;
+          default:
+            break;
         }
       }
     });

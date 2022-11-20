@@ -121,6 +121,59 @@ export interface IF11Host {
   sendAll(action: string): void;
 }
 
+export const F11_CMD = '#f11';
+export type F11CmdTarget = 'agent' | 'host';
+export type F11CmdHostAction = 'file' | 'proc';
+export type F11CmdAgentAction = 'sig' | 'path' | 'user';
+export type F11CmdAction = F11CmdHostAction | F11CmdAgentAction;
+
+export interface IF11CmdAgentData {
+  pid?: number | string;
+  user?: string;
+  host?: string;
+  path?: string;
+}
+
+export interface IF11CmdHostDataFile {
+  path?: string;
+  perm?: string;
+  body?: string;
+}
+
+export interface IF11CmdHostDataProc {
+  pid?: number | string;
+  cmd?: string;
+  user?: string;
+}
+
+export interface IF11CmdHostData {
+  hostname?: string;
+  address?: string;
+  uname?: string;
+  files?: IF11CmdHostDataFile[];
+  procs?: IF11CmdHostDataProc[];
+}
+
+// export type F11CmdHostData = IF11CmdHostDataFile | IF11CmdHostDataProc;
+// export type F11CmdAgentData = IF11CmdAgentDataSig | IF11CmdAgentDataPath | IF11CmdAgentDataUser;
+// export type F11CmdData = IF11CmdHostData | IF11CmdAgentData;
+
+export interface IF11Cmd {
+  target: F11CmdTarget;
+  action: F11CmdAction;
+  data: IF11CmdHostData | IF11CmdAgentData;
+}
+
+export interface IF11AgentCmd extends IF11Cmd {
+  action: F11CmdAgentAction;
+  data: IF11CmdAgentData;
+}
+
+export interface IF11HostCmd extends IF11Cmd {
+  action: F11CmdHostAction;
+  data: IF11CmdHostData;
+}
+
 export type F11LogThemeColor = 'ok' | 'get' | 'run' | 'end' | 'good' | 'warn' | 'info' | 'debug' | 'details' | 'module' | 'fatal' | 'prompt' | 'pending';
 export type F11LogTextColor = 'black' | 'red' | 'green' | 'yellow' | 'blue' | 'magenta' | 'cyan' | 'white' | 'gray' | 'grey' | 'brightRed' | 'brightGreen' | 'brightYellow' | 'brightBlue' | 'brightMagenta' | 'brightCyan' | 'brightWhite';
 export type F11LogTextBgColor = 'bgBlack' | 'bgRed' | 'bgGreen' | 'bgYellow' | 'bgBlue' | 'bgMagenta' | 'bgCyan' | 'bgWhite' | 'bgGray' | 'bgGrey' | 'bgBrightRed' | 'bgBrightGreen' | 'bgBrightYellow' | 'bgBrightBlue' | 'bgBrightMagenta' | 'bgBrightCyan' | 'bgBrightWhite';
