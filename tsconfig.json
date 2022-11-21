@@ -12,7 +12,9 @@
       "ES2020"
     ],
     "types": [
-      "@types/node"
+      "@types/node",
+      "@types/pem",
+      "@types/ws"
     ],
     "outDir": "dist",
     "declaration": true,

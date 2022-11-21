@@ -107,6 +107,17 @@ npm run compress
 - better handling of navigation and special characters, signals, etc
 
 
+#### Max watchers
+- 63603
+- Increase
+```bash
+# Update max watches
+sudo sysctl fs.inotify.max_user_watches=524288
+sudo sysctl -p
+# Show current max
+cat /proc/sys/fs/inotify/max_user_watches
+```
+
 #### Obfuscation
 - LATER
 
