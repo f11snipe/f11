@@ -180,7 +180,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
 
     if (this.relay) {
       this.log.debug(`Reset relay:`, this.relay.signature, this.relay.id);
-      this.relay.updateSig('Agent.reset()');
+      this.relay?.updateSig();
       // this.relay.write('exit');
       delete this.relay;
     }

@@ -4,7 +4,7 @@ import tls, { TLSSocket } from 'tls';
 import path from 'path';
 // import shell from 'shelljs';
 import { Socket } from 'net';
-import { F11_CMD, IF11Agent, IF11Cmd, IF11AgentCmd, IF11HostCmd, F11CmdTarget, IF11CmdAgentData } from './types';
+import { F11_CMD, IF11Agent, IF11Cmd, IF11AgentCmd, IF11HostCmd, F11CmdTarget, IF11CmdAgentData, F11CmdAction } from './types';
 import { F11Controller } from './Controller';
 import { F11Relay } from './Relay';
 import { F11Host } from './Host';
@@ -21,6 +21,7 @@ const {
 const STABALIZE = `python3 -c 'import pty; pty.spawn("/bin/bash")' || python -c 'import pty; pty.spawn("/bin/bash")' || script -qc /bin/bash /dev/null`;
 
 export class F11Agent extends F11Relay implements IF11Agent {
+  public meta?: IF11CmdAgentData;
   public host: F11Host;
   public listener?: boolean;
   public active = false;
@@ -55,14 +56,16 @@ export class F11Agent extends F11Relay implements IF11Agent {
       host: '\\"host\\":\\"`hostname`\\"',
       path: '\\"path\\":\\"`pwd`\\"',
       user: '\\"user\\":\\"`whoami`\\"',
+      shell: '\\"shell\\":\\"`basename $SHELL`\\"',
     }
 
     return `data=$(echo "{${Object.values(data).join(',')}}");echo "${F11_CMD}|agent|sig|$(echo $data | base64 -w0)"`;
   }
 
   public updateSig(src = 'none'): void {
-    this.log.warn(`CALLING UPDATE SIG ON AGENT!`, { src })
-    this.write(this.sigCmd() + `\n`);
+    const cmd = this.sigCmd();
+    this.log.debug(`Sending cmd to update agent signature`, { src, cmd })
+    this.write(`${cmd}\n`);
   }
 
   public registered(): void {
@@ -91,67 +94,80 @@ export class F11Agent extends F11Relay implements IF11Agent {
     this.emit('reset');
   }
 
-  public data(data: any): void {
-    const body = data.toString().trim();
-    const lines = body.split(`\n`);
-    let update = false;
+  public handleF11Cmd(line: string): void {
+    if (line.trim().indexOf(F11_CMD) > 0) return;
 
-    this.log.warn('LINES', lines);
+    try {
+      const [_, target, action, content] = line.split('|').map(s => s.trim());
 
-    lines.forEach((line, index) => {
-      if (line.trim() === this.sigCmd().trim()) {
-        lines.splice(index, 1);
-      } else if (line.trim().indexOf(F11_CMD) === 0) {
-        try {
-          update = true;
-          lines.splice(index, 1); // Remove cmd lines from relay writes
-          const [_, target, action, content] = line.split('|').map(s => s.trim());
+      if (!target || !action || !content) {
+        throw new Error(`Invalid F11 Command: '${line}'`);
+      }
 
-          if (!target || !action || !content) {
-            throw new Error(`Invalid F11 Command: '${line}'`);
-          }
+      const payload: IF11Cmd = {
+        target: target as F11CmdTarget,
+        action: action as F11CmdAction,
+        data: JSON.parse(Buffer.from(content, 'base64').toString())
+      };
 
-          const payload: IF11Cmd = {
-            target,
-            action,
-            data: JSON.parse(Buffer.from(content, 'base64').toString())
-          };
+      switch (target as F11CmdTarget) {
+        case 'agent':
+          const agentCmd = payload as IF11AgentCmd;
+          this.meta = agentCmd.data;
 
-          switch (target as F11CmdTarget) {
-            case 'agent':
-              const agentCmd = payload as IF11AgentCmd;
-              switch (agentCmd.action) {
-                case 'sig':
-                  this.signature = `${agentCmd.data.user}@${agentCmd.data.host}:${agentCmd.data.path}`;
-                  if (agentCmd.data.host) {
-                    this.host.hostname = agentCmd.data.host;
-                  }
-                  break;
-                case 'path':
-                  break;
-                case 'user':
-                  break;
-                default:
-                  break;
+          switch (agentCmd.action) {
+            case 'sig':
+              this.signature = `${agentCmd.data.user}@${agentCmd.data.host}`;
+
+              if (agentCmd.data.path) {
+                this.signature += `:${agentCmd.data.path}`;
+              }
+
+              if (agentCmd.data.shell) {
+                this.signature = `[${agentCmd.data.shell}] ${this.signature}`;
+              }
+
+              if (agentCmd.data.host) {
+                this.host.hostname = agentCmd.data.host;
               }
               break;
-            case 'host':
-              const hostCmd = payload as IF11HostCmd;
-              switch (hostCmd.action) {
-                case 'file':
-                  break;
-                case 'proc':
-                  break;
-                default:
-                  break;
-              }
+            case 'path':
+              break;
+            case 'user':
               break;
             default:
               break;
           }
-        } catch (err) {
-          this.log.warn('F11 Cmd Error', err);
-        }
+          break;
+        case 'host':
+          const hostCmd = payload as IF11HostCmd;
+          switch (hostCmd.action) {
+            case 'file':
+              break;
+            case 'proc':
+              break;
+            default:
+              break;
+          }
+          break;
+        default:
+          break;
+      }
+    } catch (err) {
+      this.log.warn('F11 Cmd Error', err);
+    }
+  }
+
+  public data(data: any): void {
+    const body = data.toString().trim();
+    const lines = body.split(`\n`);
+
+    this.log.debug('Agent.data() - LINES', lines);
+
+    lines.forEach((line, index) => {
+      if (line.trim().includes(F11_CMD)) {
+        lines.splice(index, 1); // Remove cmd lines from relay writes
+        this.handleF11Cmd(line);
       }
     });
 
@@ -168,23 +184,23 @@ export class F11Agent extends F11Relay implements IF11Agent {
       this.log.debug(`Handling data as listener: ${data}`);
       this.handle(body);
     } else {
-      if (this.relay) {
-        this.log.warn('BEFORE SIG SEND LAST LINE:', this.lastLine?.includes(this.signature), this.lastLine, this.signature);
-        if (!this.stablized && update && !this.lastLine?.includes(this.signature)) {
-          lines.push(`\n${this.signature} $ `);
-        }
-
-        this.relay.write(lines.join(`\n`));
-        // this.relay.write(data.toString().replace(new RegExp(`[^\n]+${F11_CMD}[^\n]+\n`, 'igm'), ''));
-      }
 
       if (/^ *exit *$/.test(body)) {
         this.active = false;
         this.end();
+      } else if (this.relay) {
+        // this.log.debug('Should send agent sig?', this.lastLine?.includes(this.signature), this.lastLine, this.signature);
+
+        // TODO: Better sync control flow for dynamic agent prompts (without stable)
+        // if (!this.stablized && (!this.lastLine?.includes(this.signature) || (!!this.lastLine && !lines.length))) {
+        //   lines.push(`\n${this.signature.gray}$ `);
+        // }
+
+        this.relay.write(lines.join(`\n`));
+        this.lastLine = lines[lines.length - 1];
       }
     }
 
-    this.lastLine = lines[lines.length - 1];
   }
 
   public stable(cmd?: string): void {

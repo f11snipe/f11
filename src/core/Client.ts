@@ -49,7 +49,10 @@ export class F11Client extends F11Relay implements IF11Client {
       let skip = false;
 
       lines.forEach(line => {
-        if (!this.relay) return;
+        if (!this.relay) {
+          return;
+        };
+
         const agent = this.relay as F11Agent;
 
         if (/^ *(stable|stabalise|stabalize) *$/i.test(line)) {
@@ -58,10 +61,13 @@ export class F11Client extends F11Relay implements IF11Client {
         }
       });
 
-      if (!skip) super.data(data);
+      if (!skip) {
+        super.data(data);
 
-      if (this.relay && this.relay instanceof F11Agent) {
-        this.relay.updateSig('Client.data()' + (skip ? 'SKIP' : 'SUPER DATA'));
+        // TODO: Better sync control flow for dynamic agent prompts (without stable)
+        // if (this.relay && !lines.find(l => this.commands.includes(l.trim().split(' ')[0])) && this.relay instanceof F11Agent && !this.relay.stablized) {
+        //   this.relay.updateSig('Client.data()');
+        // }
       }
     }
   }

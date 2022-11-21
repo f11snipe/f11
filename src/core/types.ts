@@ -133,6 +133,7 @@ export interface IF11CmdAgentData {
   user?: string;
   host?: string;
   path?: string;
+  shell?: string;
 }
 
 export interface IF11CmdHostDataFile {
