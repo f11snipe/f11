@@ -138,8 +138,11 @@ export interface IF11CmdAgentData {
 
 export interface IF11CmdHostDataFile {
   path?: string;
+  hash?: string;
   perm?: string;
+  attr?: string;
   body?: string;
+  size?: string | number;
 }
 
 export interface IF11CmdHostDataProc {
@@ -152,7 +155,9 @@ export interface IF11CmdHostData {
   hostname?: string;
   address?: string;
   uname?: string;
-  files?: IF11CmdHostDataFile[];
+  files?: {
+    [path: string]: IF11CmdHostDataFile
+  };
   procs?: IF11CmdHostDataProc[];
 }
 

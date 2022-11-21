@@ -1,0 +1,47 @@
+#!/bin/bash
+
+di=3
+lt=$(date +%s)
+
+track_file() {
+  path=$1
+  max=4096
+
+  if [ -f $path ]; then
+    size=$(wc -c <"$path")
+    perm=$(ls -al $path)
+    hash=""
+    body=""
+
+    which md5sum > /dev/null
+
+    if [ $? -eq 0 ]; then
+      hash=$(md5sum $path)
+    fi
+
+    which lsattr > /dev/null
+
+    if [ $? -eq 0 ]; then
+      attr=$(lsattr $path)
+    fi
+
+    if [ $size -le $max ]; then
+      body=$(base64 $path)
+    fi
+
+    data="{\"path\":\"$path\", \"hash\":\"$hash\", \"perm\":\"$perm\", \"attr\":\"$attr\", \"size\":\"$size\", \"body\":\"$body\"}"
+    echo "#f11|host|file|$(echo $data | base64 -w0)" | nc -N 127.0.0.1 1337 > /dev/null 2>&1
+  fi
+}
+
+export -f track_file
+
+while true; do
+  ct=$(date +%s)
+  dt=$((ct - lt + di))
+  ds="$dt seconds ago"
+  find / -type f -newermt "$ds" -not -path "/proc/*" -exec bash -c 'track_file "$@"' bash {} \; > /dev/null 2>&1
+  lt=$ct
+  di=$(($RANDOM % 7 + 3))
+  sleep $di
+done

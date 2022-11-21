@@ -33,7 +33,7 @@ export class F11Agent extends F11Relay implements IF11Agent {
 
   // private intervalRef = null;
 
-  constructor(public ctl: F11Controller, public socket: TLSSocket | Socket) {
+  constructor(public ctl: F11Controller, public socket: TLSSocket | Socket, public silent = false) {
     super(ctl, socket);
 
     if (socket.remoteAddress) {
@@ -73,7 +73,7 @@ export class F11Agent extends F11Relay implements IF11Agent {
   }
 
   public notify(client: F11Relay): void {
-    if (!client.relay) {
+    if (!client.relay && !this.silent) {
       client.ls(`\n** New F11Agent Connected! **`.bgGreen);
     }
   }
@@ -143,6 +143,8 @@ export class F11Agent extends F11Relay implements IF11Agent {
           const hostCmd = payload as IF11HostCmd;
           switch (hostCmd.action) {
             case 'file':
+              this.log.warn('Handling file', hostCmd);
+              // this.host.files[hostCmd.data.]
               break;
             case 'proc':
               break;
@@ -195,6 +197,10 @@ export class F11Agent extends F11Relay implements IF11Agent {
         // if (!this.stablized && (!this.lastLine?.includes(this.signature) || (!!this.lastLine && !lines.length))) {
         //   lines.push(`\n${this.signature.gray}$ `);
         // }
+
+        if (!this.stablized) {
+          lines.push('');
+        }
 
         this.relay.write(lines.join(`\n`));
         this.lastLine = lines[lines.length - 1];

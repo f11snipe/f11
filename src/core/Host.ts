@@ -1,11 +1,14 @@
 import 'colors';
 import async from 'async';
+import { IF11CmdHostData } from './types';
 import { F11Base } from './Base';
 import { F11Agent } from './Agent';
 import { F11Client } from './Client';
 import { F11Controller } from './Controller';
 
-export class F11Host extends F11Base implements F11Host {
+export class F11Host extends F11Base implements F11Host, IF11CmdHostData {
+  public files = {};
+
   constructor(public ctl: F11Controller, public address: string, public hostname: string) {
     super();
   }

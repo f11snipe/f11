@@ -221,7 +221,7 @@ export class F11Controller extends F11Base {
     this.agentServer.on('secureConnection', this.connectAgent.bind(this));
     this.clientServer.on('secureConnection', this.connectClient.bind(this));
     this.extraServers.forEach(exSrv => {
-      exSrv.on('connection', this.connectAgent.bind(this));
+      exSrv.on('connection', this.connectExtraAgent.bind(this));
     });
   }
 
@@ -244,13 +244,20 @@ export class F11Controller extends F11Base {
     return host;
   }
 
-  public connectAgent(socket: TLSSocket | Socket): void {
-    const agent = new F11Agent(this, socket);
+  public initAgent(agent: F11Agent) {
     agent.init();
-    // agent.send(STABALIZE);
     this.agents.push(agent);
-    // agent.registered();
     this.debug();
+  }
+
+  public connectAgent(socket: TLSSocket | Socket): void {
+    const agent = new F11Agent(this, socket, true);
+    this.initAgent(agent);
+  }
+
+  public connectExtraAgent(socket: TLSSocket | Socket): void {
+    const agent = new F11Agent(this, socket);
+    this.initAgent(agent);
   }
 
   public connectClient(socket: TLSSocket): void {
