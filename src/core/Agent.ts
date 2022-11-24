@@ -4,7 +4,7 @@ import tls, { TLSSocket } from 'tls';
 import path from 'path';
 // import shell from 'shelljs';
 import { Socket } from 'net';
-import { F11_CMD, IF11Agent, IF11Cmd, IF11AgentCmd, IF11HostCmd, F11CmdTarget, IF11CmdAgentData, F11CmdAction } from './types';
+import { F11_CMD, IF11Agent, IF11Cmd, IF11AgentCmd, IF11HostCmd, F11CmdTarget, IF11CmdAgentData, IF11CmdHostDataFile, IF11CmdHostDataProc, F11CmdAction } from './types';
 import { F11Controller } from './Controller';
 import { F11Relay } from './Relay';
 import { F11Host } from './Host';
@@ -143,10 +143,14 @@ export class F11Agent extends F11Relay implements IF11Agent {
           const hostCmd = payload as IF11HostCmd;
           switch (hostCmd.action) {
             case 'file':
-              this.log.warn('Handling file', hostCmd);
-              // this.host.files[hostCmd.data.]
+              const fileData = hostCmd.data as IF11CmdHostDataFile;
+              this.log.warn('Handling file', fileData);
+              this.host.files[fileData.path] = fileData;
               break;
             case 'proc':
+              const procData = hostCmd.data as IF11CmdHostDataProc;
+              this.log.warn('Handling proc', procData);
+              this.host.procs.push(procData);
               break;
             default:
               break;
@@ -163,15 +167,14 @@ export class F11Agent extends F11Relay implements IF11Agent {
   public data(data: any): void {
     const body = data.toString().trim();
     const lines = body.split(`\n`);
+    let forward = true;
 
     this.log.debug('Agent.data() - LINES', lines);
 
-    lines.forEach((line, index) => {
-      if (line.trim().includes(F11_CMD)) {
-        lines.splice(index, 1); // Remove cmd lines from relay writes
-        this.handleF11Cmd(line);
-      }
-    });
+    if (body.includes(F11_CMD)) {
+      this.handleF11Cmd(body);
+      forward = false;
+    }
 
     if (!this.active) {
       this.active = true;
@@ -190,20 +193,8 @@ export class F11Agent extends F11Relay implements IF11Agent {
       if (/^ *exit *$/.test(body)) {
         this.active = false;
         this.end();
-      } else if (this.relay) {
-        // this.log.debug('Should send agent sig?', this.lastLine?.includes(this.signature), this.lastLine, this.signature);
-
-        // TODO: Better sync control flow for dynamic agent prompts (without stable)
-        // if (!this.stablized && (!this.lastLine?.includes(this.signature) || (!!this.lastLine && !lines.length))) {
-        //   lines.push(`\n${this.signature.gray}$ `);
-        // }
-
-        if (!this.stablized) {
-          lines.push('');
-        }
-
-        this.relay.write(lines.join(`\n`));
-        this.lastLine = lines[lines.length - 1];
+      } else if (this.relay && forward) {
+        this.relay.write(data);
       }
     }
 

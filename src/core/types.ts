@@ -137,7 +137,7 @@ export interface IF11CmdAgentData {
 }
 
 export interface IF11CmdHostDataFile {
-  path?: string;
+  path: string;
   hash?: string;
   perm?: string;
   attr?: string;
@@ -146,9 +146,9 @@ export interface IF11CmdHostDataFile {
 }
 
 export interface IF11CmdHostDataProc {
-  pid?: number | string;
+  pid: number | string;
   cmd?: string;
-  user?: string;
+  uid?: string;
 }
 
 export interface IF11CmdHostData {

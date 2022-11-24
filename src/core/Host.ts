@@ -1,6 +1,6 @@
 import 'colors';
 import async from 'async';
-import { IF11CmdHostData } from './types';
+import { IF11CmdHostData, IF11CmdHostDataProc } from './types';
 import { F11Base } from './Base';
 import { F11Agent } from './Agent';
 import { F11Client } from './Client';
@@ -8,9 +8,14 @@ import { F11Controller } from './Controller';
 
 export class F11Host extends F11Base implements F11Host, IF11CmdHostData {
   public files = {};
+  public procs: IF11CmdHostDataProc[] = [];
 
   constructor(public ctl: F11Controller, public address: string, public hostname: string) {
     super();
+
+    // setInterval(() => {
+    //   this.log.debug('HOST FILES LIST', this.files);
+    // }, 5000);
   }
 
   get agents(): F11Agent[] {
