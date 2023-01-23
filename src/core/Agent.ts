@@ -59,6 +59,7 @@ export class F11Agent extends F11Relay implements IF11Agent {
       shell: '\\"shell\\":\\"`basename $SHELL`\\"',
     }
 
+    // return `data=$(echo "{${Object.values(data).join(',')}}");echo "${F11_CMD}|agent|sig|$(echo $data | base64)"`;
     return `data=$(echo "{${Object.values(data).join(',')}}");echo "${F11_CMD}|agent|sig|$(echo $data | base64 -w0)"`;
   }
 

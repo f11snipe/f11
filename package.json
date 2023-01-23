@@ -27,7 +27,8 @@
     "list": "[ -d dist ] && du -sh dist/*",
     "clean": "[ ! -d dist ] || rm -rf dist/*",
     "compile": "npm run clean && npm run pkg",
-    "compress": "for i in dist/f11-*; do echo \"Compress: ${i}\" && xz -k -z -9 $i; done"
+    "compress": "for i in dist/f11-*; do echo \"Compress: ${i}\" && xz -k -z -9 $i; done",
+    "register": "ts-node src/register.ts"
   },
   "repository": {
     "type": "git",
