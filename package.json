@@ -22,6 +22,7 @@
     "tinker": "nodemon src/tinker.ts",
     "koth": "nodemon src/koth.ts",
     "watch": "nodemon src/watch.ts",
+    "procs": "nodemon src/procs.ts",
     "scan": "ts-node src/scan.ts",
     "build": "tsc && terser dist/index.js > dist/index.min.js",
     "list": "[ -d dist ] && du -sh dist/*",
