@@ -1,12 +1,12 @@
 import fs from 'fs';
 import async from 'async';
 
-const INTERVAL = 100;
+const INTERVAL = 50;
 const PROC_DIR = '/proc';
 
 const PROC_DATA = [
-  'cgroup',
   'cmdline',
+  'cgroup',
   'environ',
 ];
 
@@ -24,7 +24,7 @@ const PROC_DIRS = [
 ];
 
 interface ProcData {
-  proc: number;
+  pid: number;
   uid: number;
   gid: number;
   cgroup?: string;
@@ -36,23 +36,34 @@ interface ProcData {
   stats?: fs.Stats
 }
 
-const track = (proc: number, cb: (err?: Error | null) => void) => {
-  fs.lstat(`/proc/${proc}`, (err, stats) => {
-    // if (err) console.warn(err);
+const history: ProcData[] = [];
+const current: { [key: string]: ProcData } = {};
+
+const str = (data: ProcData): string => {
+  const { pid, uid, gid, cmdline } = data;
+  return `[${pid}] USER=${uid} GROUP=${gid} | ${cmdline}`;
+};
+
+const track = (pid: number, cb: (err?: Error | null) => void) => {
+  fs.lstat(`${PROC_DIR}/${pid}`, (err, stats) => {
+    if (err) {
+      console.warn(err);
+      return;
+    }
 
     const { uid, gid } = stats;
     const procData: ProcData = {
       stats,
-      proc,
+      pid,
       uid,
       gid
     };
 
     async.each(PROC_DATA, (name, next) => {
-      const dpath = [PROC_DIR, proc, name].join('/');
+      const dpath = [PROC_DIR, pid, name].join('/');
       fs.readFile(dpath, (err, data) => {
         // if (err) console.warn(err);
-        // console.log(proc, name, dpath, data?.toString());
+        // console.log(pid, name, dpath, data?.toString());
         procData[name] = data?.toString();
         next();
       });
@@ -61,10 +72,10 @@ const track = (proc: number, cb: (err?: Error | null) => void) => {
       // if (err) console.warn(err);
 
       async.each(PROC_LINKS, (link, next) => {
-        const dpath = [PROC_DIR, proc, link].join('/');
+        const dpath = [PROC_DIR, pid, link].join('/');
         fs.readlink(dpath, (err, value) => {
           // if (err) console.warn(err);
-          // console.log(proc, link, dpath, value);
+          // console.log(pid, link, dpath, value);
           procData[link] = value;
           next();
         });
@@ -72,7 +83,10 @@ const track = (proc: number, cb: (err?: Error | null) => void) => {
         // if (err) throw err;
         // if (err) console.warn(err);
 
-        console.log(`DONE: track(${proc})`, procData);
+        if (!current[pid]) {
+          current[pid] = procData;
+          console.log('START:', str(procData));
+        }
 
         cb();
       });
@@ -80,20 +94,47 @@ const track = (proc: number, cb: (err?: Error | null) => void) => {
   });
 };
 
-const scan = async () => {
-  const procs = fs.readdirSync(PROC_DIR);
+const scan = (): void => {
+    const procs = fs.readdirSync(PROC_DIR);
 
-  console.log(procs);
+    // console.log(procs);
 
-  async.each(procs, (proc, next) => {
-    if (/^[0-9]+$/.test(proc)) {
-      track(parseInt(proc), next);
-    }
-  }, (err) => {
-    if (err) throw err;
+    async.each(procs, (pid, next) => {
+      if (/^[0-9]+$/.test(pid)) {
+        track(parseInt(pid), next);
+      }
+    }, (err) => {
+      if (err) throw err;
 
-    console.log('DONE: scan()');
-  });
+      async.each(Object.keys(current), (pid, next) => {
+        if (!procs.includes(pid)) {
+          console.log('DONE:', str(current[pid]));
+          delete current[pid];
+        }
+      }, (err) => {
+        if (err) {
+          console.warn(err);
+        }
+
+        // console.log('SCAN FINISHED');
+        // cb();
+      });
+    });
 };
 
-scan();
+// const poll = () => {
+//   scan((err) => {
+//     if (err) {
+//       console.warn(err);
+//     }
+
+//     setTimeout(() => poll(), INTERVAL);
+//   });
+// }
+
+// poll();
+// scan();
+
+setInterval(() => {
+  scan();
+}, INTERVAL);
