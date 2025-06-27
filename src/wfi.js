@@ -55,6 +55,7 @@ var runScan = function () {
         var seconds = (duration / 1000).toFixed(2);
         console.log(Object.values(report).join("\n"));
         console.log("Finished (".concat(port, " open in ").concat(seconds, "s)"));
+        process.exit(0);
     });
 };
 runScan();

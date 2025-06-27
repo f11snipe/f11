@@ -62,6 +62,7 @@ const runScan = () => {
 
     console.log(Object.values(report).join(`\n`));
     console.log(`Finished (${port} open in ${seconds}s)`);
+    process.exit(0);
   });
 };
 
