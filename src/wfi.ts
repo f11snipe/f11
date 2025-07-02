@@ -2,8 +2,8 @@ import * as net from 'net';
 
 const { RHOST = '127.0.0.1', RPORT = '80' } = process.env;
 const MAX_WAIT = 600000; // 10 minutes
-const INTERVAL = 10; // 10ms
-const TIMEOUT = 500;
+const INTERVAL = 5; // 5ms
+const TIMEOUT = 50; // 50ms
 const report: { [port: number]: string } = {};
 
 const categorize = (data: string): string[] => {

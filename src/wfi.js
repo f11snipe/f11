@@ -3,8 +3,8 @@ exports.__esModule = true;
 var net = require("net");
 var _a = process.env, _b = _a.RHOST, RHOST = _b === void 0 ? '127.0.0.1' : _b, _c = _a.RPORT, RPORT = _c === void 0 ? '80' : _c;
 var MAX_WAIT = 600000; // 10 minutes
-var INTERVAL = 10; // 10ms
-var TIMEOUT = 500;
+var INTERVAL = 5; // 5ms
+var TIMEOUT = 50; // 50ms
 var report = {};
 var categorize = function (data) {
     var cats = ['FTP', 'SSH', 'TELNET', 'MYSQL', 'SMB', 'SAMBA', 'RPC', 'BIND'];
